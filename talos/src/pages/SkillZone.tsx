@@ -1,15 +1,16 @@
 import { useRef, useState, useEffect } from "react";
 import {
-  ZoomIn,
-  ZoomOut,
-  Maximize2,
   Home,
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
 import { useLocation } from "react-router-dom";
 import { invoke } from "@tauri-apps/api/core";
-import SkillNode, { SkillData } from "../components/SkillNode";
+import SkillNode, { SkillData, SkillPort } from "../components/SkillNode";
+import PropertiesPanel from "../components/Properties"
+import AssetBrowser, { AssetItem } from "../components/AssetBrowser";
+import SkillNodePreview from "../components/SkillNodePreview";
+import { DndContext, DragEndEvent, useDroppable} from "@dnd-kit/core";
 
 interface Connection {
   fromSkillId: string;
@@ -24,6 +25,7 @@ interface Graph {
   edges: Connection[];
 }
 
+
 export default function SkillZone() {
   const location = useLocation();
   const bot = location.state;
@@ -34,11 +36,83 @@ export default function SkillZone() {
   const [scale, setScale] = useState(1);
   const [pos, setPos] = useState({ x: 0, y: 0 });
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
 
   const [graph, setGraph] = useState<Graph>({
     nodes: [],
     edges: [],
   });
+
+  type AssetWithTemplate = AssetItem & { skillData: SkillData };
+
+  const [assets, setAssets] = useState<AssetWithTemplate[]>([]);
+
+  const [assetBrowserOpen, setAssetBrowserOpen] = useState(true);
+  const [assetBrowserWidth, setAssetBrowserWidth] = useState(320);
+
+  // Droppable zone for the canvas
+  const { setNodeRef: setDroppableRef } = useDroppable({
+    id: 'skill-zone-canvas',
+  });
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    console.log(active, over)
+    // Check if dropped over the canvas
+    if (over && over.id === 'skill-zone-canvas') {
+      console.log("Dropped asset skill ID:", active.id);
+      
+      // Get the asset data
+      const assetData = active.data.current;
+      
+      if (assetData) {
+        // Calculate drop position in world coordinates
+        const rect = containerRef.current?.getBoundingClientRect();
+        if (rect && event.activatorEvent instanceof MouseEvent) {
+          const dropX = (event.activatorEvent.clientX - rect.left - pos.x) / scale;
+          const dropY = (event.activatorEvent.clientY - rect.top - pos.y) / scale;
+          
+          console.log("Asset Data:", assetData);
+          console.log("Drop Position:", { x: dropX, y: dropY });
+          
+          // TODO: Create a new node from the asset at the drop position
+          // Example:
+          // const newNode: SkillData = {
+          //   ...assetData.skillData,
+          //   id: `${assetData.id}_${Date.now()}`,
+          //   x: dropX,
+          //   y: dropY,
+          // };
+          // setGraph(prev => ({
+          //   ...prev,
+          //   nodes: [...prev.nodes, newNode]
+          // }));
+        }
+      }
+    }
+  };
+
+
+  // Active connection being dragged
+  const [activeConnection, setActiveConnection] = useState<null | {
+    fromSkillId: string;
+    fromPortId: string;
+    type: "execution" | "attribute";
+    startX: number;
+    startY: number;
+    mouseX: number;
+    mouseY: number;
+    fromIo: "input" | "output";
+    isValid: boolean;
+  }>(null);
+
+  // hovered port while dragging
+  const hoveredPortRef = useRef<null | {
+    skillId: string;
+    portId: string;
+    portType: SkillPort["type"];
+    io: "input" | "output";
+  }>(null);
 
   // -------- LOAD GRAPH ON STARTUP ----------
   useEffect(() => {
@@ -58,7 +132,7 @@ export default function SkillZone() {
               label: "Start",
               skillType: "start",
               inputs: [],
-               outputs: [
+              outputs: [
                 { id: "exec_out", label: "Exec", type: "EXEC", io: "output" },
               ],
             },
@@ -87,7 +161,179 @@ export default function SkillZone() {
       }
     }
     load();
-  }, []);
+  }, [bot.path]);
+
+  // -------- LOAD ASSETS ON STARTUP ----------
+  useEffect(() => {
+    async function loadAssets() {
+      try {
+        // Parse YAML
+        const registryJson = await invoke("load_asset_registry_json");
+
+        const registry = JSON.parse(registryJson as string);
+
+        const allAssets: AssetWithTemplate[] = [];
+
+        function mapYamlTypeToPortType(t: string) {
+          if (!t) return "string";
+
+          if (t === "EXEC") return "EXEC";
+
+          if (t.startsWith("list<")) {
+            return "string[]";   // or dynamic[] if you want
+          }
+
+          if (t === "dynamic") return "string";
+
+          return t as any;
+        }
+
+
+        // Helper to load config.yaml
+        async function loadConfig(skill: any, type: "skill" | "std_skill" | "utility" | "static" ): Promise<AssetWithTemplate> {
+          try {
+            const cfgJson = await invoke("load_skill_config_json", {
+              skillPath: skill.path
+            });
+
+            const cfg = JSON.parse(cfgJson as string);
+
+            const inputs = (cfg.INPUT || []).map((p: any) => ({
+              id: p.id,
+              label: p.label ?? p.id,
+              type: mapYamlTypeToPortType(p.type),
+              io: "input",
+            }));
+
+            const outputs = (cfg.OUTPUT || []).map((p: any) => ({
+              id: p.id,
+              label: p.label ?? p.id,
+              type: mapYamlTypeToPortType(p.type),
+              io: "output",
+            }));
+            // ------------------------------------------------
+
+            const skillData: SkillData = {
+              id: cfg.name,
+              label: cfg.name,
+              skillType: type,
+              x: 0,
+              y: 0,
+              inputs,
+              outputs,
+            };
+
+            const asset: AssetWithTemplate = {
+              id: cfg.name,
+              label: cfg.name,
+              type,
+              preview: <SkillNodePreview data={skillData} />,
+              skillData,
+            };
+
+            return asset;
+
+          } catch (err) {
+            console.error("Error loading skill config:", err);
+
+            const fallbackSkillData: SkillData = {
+              id: skill.id,
+              label: skill.name,
+              skillType: type,
+              x: 0,
+              y: 0,
+              inputs: [],
+              outputs: [],
+            };
+
+            return {
+              id: skill.id,
+              label: skill.name,
+              type,
+              preview: (
+                <div className="text-xs opacity-50">
+                  (config.yaml invalid)
+                </div>
+              ),
+              skillData: fallbackSkillData,
+            };
+          }
+        }
+
+        // CUSTOM_SKILLS
+        if (registry.custom_skills) {
+          for (const s of registry.custom_skills) {
+            allAssets.push(await loadConfig(s, "skill"));
+          }
+        }
+
+        // STANDARD_SKILLS
+        if (registry.standard_skills) {
+          for (const s of registry.standard_skills) {
+            allAssets.push(await loadConfig(s, "std_skill"));
+          }
+        }
+
+        // UTILITY_FUNCTIONS
+        if (registry.utility_functions) {
+          for (const s of registry.utility_functions) {
+            allAssets.push(await loadConfig(s, "utility"));
+          }
+        }
+
+        // // STATIC
+        // if (registry.utility_functions) {
+        //   for (const s of registry.static) {
+        //     allAssets.push(await loadConfig(s, "static"));
+        //   }
+        // }
+
+        setAssets(allAssets);
+
+      } catch (e) {
+        console.error("Failed to load assets:", e);
+      }
+    }
+
+    loadAssets();
+    console.log("Loading Assets")
+  }, [bot.path]);
+
+  // ------------ DELETE NODE ---------------
+  // TODO: Consider a pop up beofre deleting the node.
+  useEffect(() => {
+    const handleKeyDown = async (e: KeyboardEvent) => {
+      if (!selectedNodeId) return;
+
+      // Delete key
+      if (e.key === "Delete" || e.key === "Backspace") {
+        try {
+          await invoke("delete_node", {
+            botPath: bot_path, // pass your bot path
+            nodeId: selectedNodeId,
+          });
+
+          // Update frontend state
+          setGraph((prevGraph) => ({
+            ...prevGraph,
+            nodes: prevGraph.nodes.filter((n) => n.id !== selectedNodeId),
+            edges: prevGraph.edges.filter(
+              (edge) =>
+                edge.fromSkillId !== selectedNodeId &&
+                edge.toSkillId !== selectedNodeId
+            ),
+          }));
+
+          setSelectedNodeId(null);
+        } catch (err) {
+          console.error("Failed to delete node:", err);
+        }
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [selectedNodeId]);
 
   // -------- SAVE GRAPH ON CHANGE ----------
   useEffect(() => {
@@ -96,7 +342,7 @@ export default function SkillZone() {
       botPath: bot.path,
       graphJson: JSON.stringify(graph, null, 2),
     });
-  }, [graph]);
+  }, [graph, bot.path]);
 
   const isPanning = useRef(false);
   const isDraggingNode = useRef(false);
@@ -106,9 +352,11 @@ export default function SkillZone() {
   // ---------------- CANVAS MOUSE DOWN ----------------
   const handleCanvasMouseDown = (e: React.MouseEvent) => {
     const target = e.target as HTMLElement;
-    if (!target.closest(".node-item")) {
+    if (!target.closest(".node-item") && !target.closest(".asset-item")) { 
+      // only pan if click is outside nodes/assets
       isPanning.current = true;
       lastPos.current = { x: e.clientX, y: e.clientY };
+      setSelectedNodeId(null);
     }
   };
 
@@ -118,6 +366,111 @@ export default function SkillZone() {
     isDraggingNode.current = true;
     draggedNodeId.current = id;
     lastPos.current = { x: e.clientX, y: e.clientY };
+    setSelectedNodeId(id); // Select node when clicking it
+  };
+
+  // ---------------- VALIDATION HELPER ----------------
+  const isValidConnection = (
+    fromNode: SkillData,
+    fromPort: SkillPort,
+    toNode: SkillData,
+    toPort: SkillPort
+  ): boolean => {
+    const fromIsExec = fromPort.type === "EXEC";
+    const toIsExec = toPort.type === "EXEC";
+    if (fromIsExec !== toIsExec) return false;
+
+    if (fromPort.io === toPort.io) return false;
+
+    if (fromNode.id === toNode.id) return false;
+
+    return true;
+  };
+
+  // ---------------- PORT EVENTS ----------------
+  const handlePortMouseDown = (
+    nodeId: string,
+    portId: string,
+    portType: SkillPort["type"],
+    io: "input" | "output",
+    offsetScreenPx: { x: number; y: number }
+  ) => {
+    const node = getNodeById(nodeId)!;
+    const startX = node.x + offsetScreenPx.x / scale;
+    const startY = node.y + offsetScreenPx.y / scale;
+
+    const connType = portType === "EXEC" ? "execution" : "attribute";
+
+    if (io === "input") {
+      const existingEdge = graph.edges.find(
+        (e) => e.toSkillId === nodeId && e.toPortId === portId
+      );
+
+      if (existingEdge) {
+        setGraph((prev) => ({
+          ...prev,
+          edges: prev.edges.filter((e) => e !== existingEdge),
+        }));
+
+        const fromNode = getNodeById(existingEdge.fromSkillId)!;
+        const fromWorld = getPortWorldPosition(fromNode, existingEdge.fromPortId);
+
+        setActiveConnection({
+          fromSkillId: existingEdge.fromSkillId,
+          fromPortId: existingEdge.fromPortId,
+          type: connType,
+          startX: fromWorld.x,
+          startY: fromWorld.y,
+          mouseX: startX,
+          mouseY: startY,
+          fromIo: "output",
+          isValid: true,
+        });
+        return;
+      }
+    }
+
+    setActiveConnection({
+      fromSkillId: nodeId,
+      fromPortId: portId,
+      type: connType,
+      startX,
+      startY,
+      mouseX: startX,
+      mouseY: startY,
+      fromIo: io,
+      isValid: true,
+    });
+  };
+
+  const handlePortHover = (
+    nodeId: string,
+    portId: string,
+    portType: SkillPort["type"],
+    io: "input" | "output"
+  ) => {
+    hoveredPortRef.current = { skillId: nodeId, portId, portType, io };
+
+    if (activeConnection) {
+      const fromNode = getNodeById(activeConnection.fromSkillId)!;
+      const toNode = getNodeById(nodeId)!;
+      const fromPort = findPort(fromNode, activeConnection.fromPortId);
+      const toPort = findPort(toNode, portId);
+
+      if (fromPort && toPort) {
+        const valid = isValidConnection(fromNode, fromPort, toNode, toPort);
+        setActiveConnection((prev) => (prev ? { ...prev, isValid: valid } : prev));
+      } else {
+        setActiveConnection((prev) => (prev ? { ...prev, isValid: false } : prev));
+      }
+    }
+  };
+
+  const handlePortLeave = () => {
+    hoveredPortRef.current = null;
+    if (activeConnection) {
+      setActiveConnection((prev) => (prev ? { ...prev, isValid: true } : prev));
+    }
   };
 
   // ---------------- MOVE HANDLER ----------------
@@ -145,13 +498,118 @@ export default function SkillZone() {
         ),
       }));
     }
+
+    if (activeConnection) {
+      const rect = containerRef.current?.getBoundingClientRect();
+      if (!rect) return;
+      const mx = (e.clientX - rect.left - pos.x) / scale;
+      const my = (e.clientY - rect.top - pos.y) / scale;
+
+      setActiveConnection((prev) => (prev ? { ...prev, mouseX: mx, mouseY: my } : prev));
+    }
   };
 
   const handleMouseUp = () => {
+    if (activeConnection) {
+      const hovered = hoveredPortRef.current;
+
+      if (hovered && activeConnection.isValid) {
+        const fromNode = getNodeById(activeConnection.fromSkillId)!;
+        const toNode = getNodeById(hovered.skillId)!;
+
+        const fromPort = findPort(fromNode, activeConnection.fromPortId);
+        const toPort = findPort(toNode, hovered.portId);
+
+        if (fromPort && toPort && isValidConnection(fromNode, fromPort, toNode, toPort)) {
+          let edgeFromSkillId = activeConnection.fromSkillId;
+          let edgeFromPortId = activeConnection.fromPortId;
+          let edgeToSkillId = hovered.skillId;
+          let edgeToPortId = hovered.portId;
+
+          if (activeConnection.fromIo === "input" && hovered.io === "output") {
+            edgeFromSkillId = hovered.skillId;
+            edgeFromPortId = hovered.portId;
+            edgeToSkillId = activeConnection.fromSkillId;
+            edgeToPortId = activeConnection.fromPortId;
+          }
+
+          const filteredEdges = graph.edges.filter(
+            (e) => !(e.toSkillId === edgeToSkillId && e.toPortId === edgeToPortId)
+          );
+
+          const exists = filteredEdges.some(
+            (e) =>
+              e.fromSkillId === edgeFromSkillId &&
+              e.fromPortId === edgeFromPortId &&
+              e.toSkillId === edgeToSkillId &&
+              e.toPortId === edgeToPortId
+          );
+
+          if (!exists) {
+            const edgeType = fromPort.type === "EXEC" ? "execution" : "attribute";
+            setGraph((prev) => ({
+              ...prev,
+              edges: [
+                ...filteredEdges,
+                {
+                  fromSkillId: edgeFromSkillId,
+                  fromPortId: edgeFromPortId,
+                  toSkillId: edgeToSkillId,
+                  toPortId: edgeToPortId,
+                  type: edgeType,
+                },
+              ],
+            }));
+          }
+        }
+      }
+
+      setActiveConnection(null);
+      hoveredPortRef.current = null;
+    }
     isPanning.current = false;
     isDraggingNode.current = false;
     draggedNodeId.current = null;
   };
+
+  const handleAssetDoubleClick = async (asset: AssetItem) => {
+    const typedAsset = asset as AssetWithTemplate;
+
+    if (!typedAsset.skillData) {
+      console.warn("Asset missing skillData:", typedAsset);
+      return;
+    }
+
+    const containerRect = containerRef.current?.getBoundingClientRect();
+    if (!containerRect) return;
+
+    // 1. Calculate world-space drop position
+    const centerScreenX = containerRect.left + containerRect.width / 2;
+    const centerScreenY = containerRect.top + containerRect.height / 2;
+
+    const x = (centerScreenX - containerRect.left - pos.x) / scale;
+    const y = (centerScreenY - containerRect.top - pos.y) / scale;
+
+    try {
+
+      const newNode = await invoke<SkillData>("create_node_from_asset", {
+        botPath: bot.path,          // <-- must exist in your app state
+        baseId: typedAsset.id,
+        skillData: typedAsset.skillData,  // backend injects EXEC ports etc
+        x,
+        y
+      });
+
+      setGraph((prev) => ({
+        ...prev,
+        nodes: [...prev.nodes, newNode],
+      }));
+
+    } catch (err) {
+      console.error("Failed to create node:", err);
+    }
+  };
+
 
   // ---------------- ZOOM ----------------
   const handleWheel = (e: React.WheelEvent) => {
@@ -174,11 +632,6 @@ export default function SkillZone() {
     }
 
     setScale(newScale);
-  };
-
-  const handleResetView = () => {
-    setPos({ x: 0, y: 0 });
-    setScale(1);
   };
 
   const handlePortOffsetUpdate = (
@@ -204,6 +657,41 @@ export default function SkillZone() {
     }));
   };
 
+  // ---------------- PROPERTIES PANEL ----------------
+  const handleUpdateNode = (oldId: string, updates: Partial<SkillData>) => {
+    setGraph((prev) => {
+      const oldNode = prev.nodes.find((n) => n.id === oldId);
+      if (!oldNode) return prev;
+
+      const newId = updates.id ?? oldId;
+
+      // 1. Update the node
+      const updatedNodes = prev.nodes.map((n) =>
+        n.id === oldId ? { ...n, ...updates, id: newId } : n
+      );
+
+      // 2. If ID changed, update all edges
+      const updatedEdges =
+        newId !== oldId
+          ? prev.edges.map((e) => ({
+              ...e,
+              fromSkillId: e.fromSkillId === oldId ? newId : e.fromSkillId,
+              toSkillId: e.toSkillId === oldId ? newId : e.toSkillId,
+            }))
+          : prev.edges;
+
+      return {
+        ...prev,
+        nodes: updatedNodes,
+        edges: updatedEdges,
+      };
+    });
+  };
+
+  const handleCloseProperties = () => {
+    setSelectedNodeId(null);
+  };
+
   // ---------------- PORT POSITION ----------------
   function getPortWorldPosition(node: SkillData, portId: string) {
     const port =
@@ -218,6 +706,13 @@ export default function SkillZone() {
     };
   }
 
+  // ---------------- UTIL ----------------
+  const getNodeById = (id: string) => graph.nodes.find((n) => n.id === id);
+  const findPort = (node: SkillData | undefined, portId: string) => {
+    if (!node) return null;
+    return node.inputs.find((p) => p.id === portId) || node.outputs.find((p) => p.id === portId) || null;
+  };
+
   // ---------------- DRAW CONNECTIONS ----------------
   const renderConnections = () =>
     graph.edges.map((edge, i) => {
@@ -230,7 +725,6 @@ export default function SkillZone() {
 
       const color = edge.type === "execution" ? "#22c55e" : "#3b82f6";
 
-      // Bézier curve
       const dx = to.x - from.x;
       const cx1 = from.x + dx / 2;
       const cy1 = from.y;
@@ -252,9 +746,58 @@ export default function SkillZone() {
   // ---------------- RENDER ----------------
   if (!graph) return <div className="text-white p-10">Loading…</div>;
 
+  const renderActiveConnectionPreview = () => {
+    if (!activeConnection) return null;
+
+    const color = activeConnection.isValid
+      ? activeConnection.type === "execution"
+        ? "#22c55e"
+        : "#3b82f6"
+      : "#ef4444";
+
+    const sx = activeConnection.startX;
+    const sy = activeConnection.startY;
+    const tx = activeConnection.mouseX;
+    const ty = activeConnection.mouseY;
+    const cx1 = sx + (tx - sx) / 2;
+    const cy1 = sy;
+    const cx2 = tx - (tx - sx) / 2;
+    const cy2 = ty;
+
+    return (
+      <>
+        <path
+          d={`M ${sx} ${sy} C ${cx1} ${cy1}, ${cx2} ${cy2}, ${tx} ${ty}`}
+          fill="none"
+          stroke={color}
+          strokeWidth="3"
+          strokeDasharray="6 6"
+        />
+        {hoveredPortRef.current && (() => {
+          const node = getNodeById(hoveredPortRef.current!.skillId);
+          if (!node) return null;
+          const world = getPortWorldPosition(node!, hoveredPortRef.current!.portId);
+          const highlightColor = activeConnection.isValid ? "#fff" : "#ef4444";
+          return (
+            <circle
+              cx={world.x}
+              cy={world.y}
+              r={8 / Math.max(0.7, scale)}
+              fill="none"
+              stroke={highlightColor}
+              strokeWidth={2 / Math.max(0.7, scale)}
+            />
+          );
+        })()}
+      </>
+    );
+  };
+
+  const selectedNode = selectedNodeId ? getNodeById(selectedNodeId) : null;
   return (
-    <div className="w-full h-screen bg-[#1a1a1a] text-white relative overflow-hidden select-none flex ">
-      {/* Sidebar */}
+    <DndContext onDragEnd={handleDragEnd}>
+    <div className="w-full h-screen bg-[#1a1a1a] text-white relative overflow-hidden select-none flex">
+      {/* Left Sidebar */}
       <div
         className={`absolute left-0 top-1/2 -translate-y-1/2 bg-gray-900 border-r border-gray-700 z-30 transition-all duration-300`}
         style={{
@@ -290,32 +833,29 @@ export default function SkillZone() {
         </div>
       </div>
 
-      {/* Zoom controls */}
-      <div className="absolute top-2 right-2 z-20 flex items-center gap-2 bg-gray-800 rounded-lg p-1 border border-gray-600">
-        <button
-          onClick={() => setScale((s) => Math.max(0.2, s - 0.1))}
-          className="p-2 hover:bg-gray-700 rounded"
+      {/* Properties Panel */}
+      {selectedNode && (
+        <div
+          className="absolute top-0 h-full transition-all duration-300 z-40"
+          style={{
+            width: "300px", // Properties panel width
+            right: assetBrowserOpen ? `${assetBrowserWidth}px` : "0px", // shift left if asset browser is open
+          }}
         >
-          <ZoomOut />
-        </button>
-
-        <span className="text-sm font-mono px-2">{Math.round(scale * 100)}%</span>
-
-        <button
-          onClick={() => setScale((s) => Math.min(2, s + 0.1))}
-          className="p-2 hover:bg-gray-700 rounded"
-        >
-          <ZoomIn />
-        </button>
-
-        <button onClick={handleResetView} className="p-2 hover:bg-gray-700 rounded">
-          <Maximize2 />
-        </button>
-      </div>
-
-      {/* CANVAS */}
+          <PropertiesPanel
+            selectedNode={selectedNode}
+            onClose={handleCloseProperties}
+            onUpdateNode={handleUpdateNode}
+          />
+        </div>
+      )}
+        {/* CANVAS */}
       <div
-        ref={containerRef}
+        ref={(node) => {
+            containerRef.current = node;
+            setDroppableRef(node);
+          }}
+        id="skill-zone-canvas"
         className="flex-1 overflow-hidden cursor-grab active:cursor-grabbing"
         onMouseDown={handleCanvasMouseDown}
         onMouseMove={handleMouseMove}
@@ -345,8 +885,10 @@ export default function SkillZone() {
             width={50000}
             height={50000}
             className="absolute top-0 left-0 pointer-events-none"
+            style={{ overflow: "visible" }}
           >
             {renderConnections()}
+            {activeConnection && renderActiveConnectionPreview()}
           </svg>
 
           {/* NODES */}
@@ -354,13 +896,28 @@ export default function SkillZone() {
             <SkillNode
               key={node.id}
               data={node}
-              selected={false}
+              selected={node.id === selectedNodeId}
               onMouseDown={(e) => handleNodeMouseDown(e, node.id)}
               onPortOffsetUpdate={handlePortOffsetUpdate}
+              onPortMouseDown={handlePortMouseDown}
+              onPortHover={handlePortHover}
+              onPortLeave={handlePortLeave}
             />
           ))}
         </div>
       </div>
+      
+      {/* Right-side Asset Browser */}
+      <AssetBrowser
+        assets={assets}
+        isOpen={assetBrowserOpen}
+        width={assetBrowserWidth}
+        onResize={setAssetBrowserWidth}
+        onToggle={() => setAssetBrowserOpen(!assetBrowserOpen)}
+        style={{ zIndex: 5 }}
+        onAssetDoubleClick={handleAssetDoubleClick}
+      />
     </div>
+  </DndContext>
   );
 }

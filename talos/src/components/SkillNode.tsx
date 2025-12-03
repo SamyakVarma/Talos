@@ -32,8 +32,24 @@ export interface SkillData {
 interface SkillNodeProps {
   data: SkillData;
   selected?: boolean;
-  onMouseDown?: (e: React.MouseEvent) => void;
+  onMouseDown?: (e: React.MouseEvent, nodeId: string) => void;
   onPortOffsetUpdate?: (nodeId: string, portId: string, offset: { x: number; y: number }) => void;
+  onPortMouseDown?: (
+    nodeId: string,
+    portId: string,
+    portType: SkillPort["type"],
+    io: "input" | "output",
+    offset: { x: number; y: number }
+  ) => void;
+
+  onPortHover?: (
+    nodeId: string,
+    portId: string,
+    portType: SkillPort["type"],
+    io: "input" | "output"
+  ) => void;
+
+  onPortLeave?: () => void;
 }
 
 export default function SkillNode({
@@ -41,6 +57,9 @@ export default function SkillNode({
   selected,
   onMouseDown,
   onPortOffsetUpdate,
+  onPortMouseDown,
+  onPortHover,
+  onPortLeave,
 }: SkillNodeProps) {
   const nodeRef = useRef<HTMLDivElement>(null);
   const portRefs = useRef<Record<string, HTMLDivElement | null>>({});
@@ -79,6 +98,48 @@ export default function SkillNode({
     portRefs.current[portId] = el;
   };
 
+  const handlePortMouseDown = (
+    e: React.MouseEvent,
+    portId: string,
+    portType: SkillPort["type"],
+    io: "input" | "output"
+  ) => {
+    e.stopPropagation(); // prevent node dragging / panning
+    if (!onPortMouseDown || !nodeRef.current) return;
+
+    const el = portRefs.current[portId];
+    const nodeEl = nodeRef.current;
+    if (!el || !nodeEl) return;
+
+    const nodeRect = nodeEl.getBoundingClientRect();
+    const portRect = el.getBoundingClientRect();
+
+    const offset = {
+      x: portRect.left + portRect.width / 2 - (nodeRect.left + nodeRect.width / 2),
+      y: portRect.top + portRect.height / 2 - (nodeRect.top + nodeRect.height / 2),
+    };
+
+    onPortMouseDown(data.id, portId, portType, io, offset);
+  };
+
+  const handlePortEnter = (
+    portId: string,
+    portType: SkillPort["type"],
+    io: "input" | "output"
+  ) => {
+    if (onPortHover) onPortHover(data.id, portId, portType, io);
+  };
+
+  const handlePortExit = () => {
+    if (onPortLeave) onPortLeave();
+  };
+
+  const portEvents = (port: SkillPort) => ({
+    onMouseDown: (e: React.MouseEvent) => handlePortMouseDown(e, port.id, port.type, port.io),
+    onMouseEnter: () => handlePortEnter(port.id, port.type, port.io),
+    onMouseLeave: handlePortExit,
+  });
+
   return (
     <div
       ref={nodeRef}
@@ -90,7 +151,7 @@ export default function SkillNode({
         top: data.y,
         transform: "translate(-50%, -50%)",
       }}
-      onMouseDown={onMouseDown}
+      onMouseDown={(e) => onMouseDown && onMouseDown(e, data.id)}
     >
       {/* EXEC HEADER */}
       {hasExec && (
@@ -103,6 +164,7 @@ export default function SkillNode({
                 className="w-3 h-3 bg-green-400 rounded-full"
                 data-portid={port.id}
                 data-io="input"
+                {...portEvents(port)}
               ></div>
             ))}
           </div>
@@ -117,6 +179,7 @@ export default function SkillNode({
                 className="w-3 h-3 bg-green-400 rounded-full"
                 data-portid={port.id}
                 data-io="output"
+                {...portEvents(port)}
               ></div>
             ))}
           </div>
@@ -141,6 +204,7 @@ export default function SkillNode({
                 className="w-2 h-2 rounded-full bg-yellow-400"
                 data-portid={data.outputs[0].id}
                 data-io="output"
+                {...portEvents(data.outputs[0])}
               ></div>
             </div>
           )}
@@ -157,6 +221,7 @@ export default function SkillNode({
                   className="w-2 h-2 rounded-full bg-cyan-400"
                   data-portid={port.id}
                   data-io="input"
+                  {...portEvents(port)}
                 ></div>
                 <span className="text-xs">{port.label}</span>
               </div>
@@ -173,6 +238,7 @@ export default function SkillNode({
                   className="w-2 h-2 rounded-full bg-yellow-400"
                   data-portid={port.id}
                   data-io="output"
+                  {...portEvents(port)}
                 ></div>
               </div>
             ))}

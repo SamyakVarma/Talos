@@ -19,7 +19,6 @@ export default function Home() {
   function openBot(bot: Bot) {
     navigate(`/skill_zone/${bot.name}`, { state: bot });
   }
-
   // Fetch bots on startup
   useEffect(() => {
     async function fetchBots() {
