@@ -1,7 +1,7 @@
-class KeyboardInput_IP:
+class Keyboard_Input_IP:
     def __init__(self):
         self.keys = []
         
-class KeyboardInput_OP:
+class Keyboard_Input_OP:
     def __init__(self):
         self.pressed = []

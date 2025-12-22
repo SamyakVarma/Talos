@@ -1,11 +1,27 @@
-#take in keystrokes, give out boolean values for each key given in the function's parameter as a list.
+# Skill description
+#--------IMPORTS-------------#
 import keyboard
+#----------------------------
 
 from skill_io import *
 
-def userMain(key_list) -> KeyboardInput_OP:
-    OP_obj = KeyboardInput_OP()
-    OP_obj.pressed = [keyboard.is_pressed(key) for key in key_list]
+# def checkPress(key_list):
+#     res = [keyboard.is_pressed(key) for key in key_list]
+#     return res
+
+def userMain(Keyboard_Input_IP_obj) -> Keyboard_Input_OP:
+    #----------- Input unwrapping -----------#
+    key_list = Keyboard_Input_IP_obj.keys
+    #----------------------------------------
+    OP_obj = Keyboard_Input_OP()
+    #----------- User-Driver Code -----------#
+    res =  [keyboard.is_pressed(key) for key in key_list]
+    #----------------------------------------
+
+    #-------- Output->Object wrapping -------#
+    OP_obj.pressed = res
+    #----------------------------------------
+    
     return OP_obj
 
 
@@ -16,7 +32,7 @@ def userMain(key_list) -> KeyboardInput_OP:
 
 #     try:
 #         while True:
-#             states = keys_pressed(keys)
+#             states = checkPress(keys)
 #             print(dict(zip(keys, states)))
 #     except KeyboardInterrupt:
 #         print("\nStopped.")
