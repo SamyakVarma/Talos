@@ -1,0 +1,32 @@
+custom_skills:
+- id: Keyboard_Input
+  name: Keyboard Input
+  description: checks whether input keys are pressed.
+  path: C:\\Users\\nssam\\Documents\\talos\\assets\\lib\\custom_skills\\Keyboard_Input
+
+standard_skills:
+- id: Debug
+  name: Debug
+  description: debug node, prints to terminal
+  path: C:\\Users\\nssam\\Documents\\talos\\assets\\lib\\std_skills\\Debug
+
+utility_functions:
+- id: boolean_and
+  name: Boolean And
+  description: performs boolean AND operation
+  path: C:\\Users\\nssam\\Documents\\talos\\assets\\lib\\utility_functs\\BooleanMath\\boolean_and
+
+- id: math_add
+  name: Add(Arithmetic)
+  description: performs arithemetic addition
+  path: C:\\Users\\nssam\\Documents\\talos\\assets\\lib\\utility_functs\\math_add
+
+- id: separate_list
+  name: Separate List
+  description: separates list to provide access to every element in the list
+  path: C:\\Users\\nssam\\Documents\\talos\\assets\\lib\\utility_functs\\separate_list
+
+static_attributes:
+- id: value
+  name: Value
+  description: Single/List like attributes that are static.

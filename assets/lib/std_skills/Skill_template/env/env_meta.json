@@ -1,0 +1,7 @@
+{
+  "python_version": "X.XX.XX", 
+  "python_paths": [
+    "C:/Users/<user_name>/Documents/talos/global_deps/python/<package_name>/<version>",
+    "..."
+  ]
+}

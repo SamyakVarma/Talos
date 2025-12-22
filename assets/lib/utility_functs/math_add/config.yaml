@@ -1,0 +1,15 @@
+name: math_add
+language: python 
+version: any
+entry: math_add
+
+INPUT:
+  - id: "a"
+    type: "number"
+  - id: "b"
+    type: "number"
+
+OUTPUT:
+  - id: "result"
+    type: "number"
+

@@ -1,0 +1,10 @@
+name: Bot
+description: 
+
+globals:
+  attributes:
+    - id: img_path_v_out
+      label: "Image Path"
+      type: string
+      value: "file"
+      description: "Static attribute: Image Path"

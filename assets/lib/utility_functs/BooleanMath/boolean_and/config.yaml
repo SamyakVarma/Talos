@@ -1,0 +1,15 @@
+name: boolean_and
+language: python 
+version: any
+entry: bool_and 
+
+INPUT:
+  - id: "a"
+    type: "bool"
+  - id: "b"
+    type: "bool"
+
+OUTPUT:
+  - id: "result"
+    type: "bool"
+

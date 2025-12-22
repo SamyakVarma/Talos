@@ -1,0 +1,146 @@
+{
+  "edges": [
+    {
+      "fromPortId": "exec_out",
+      "fromSkillId": "Start",
+      "toPortId": "exec_in",
+      "toSkillId": "object_detector",
+      "type": "execution"
+    },
+    {
+      "fromPortId": "exec_out",
+      "fromSkillId": "object_detector",
+      "toPortId": "exec_in",
+      "toSkillId": "debug__1764610994096",
+      "type": "execution"
+    },
+    {
+      "fromPortId": "exec_out",
+      "fromSkillId": "object_detector",
+      "toPortId": "exec_in",
+      "toSkillId": "end",
+      "type": "execution"
+    },
+    {
+      "fromSkillId": "img_path",
+      "fromPortId": "v_out",
+      "toSkillId": "object_detector",
+      "toPortId": "image_path",
+      "type": "attribute"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "Start",
+      "inputs": [],
+      "label": "Start",
+      "outputs": [
+        {
+          "id": "exec_out",
+          "io": "output",
+          "label": "Exec",
+          "offset": {
+            "x": 109.1875,
+            "y": -7.999998092651367
+          },
+          "type": "EXEC"
+        }
+      ],
+      "skillType": "start",
+      "x": 206.63131313131123,
+      "y": 210.2528860028862
+    },
+    {
+      "id": "object_detector",
+      "inputs": [
+        {
+          "id": "exec_in",
+          "io": "input",
+          "label": "Exec",
+          "offset": {
+            "x": -109.20001220703125,
+            "y": -15.999998092651367
+          },
+          "type": "EXEC"
+        },
+        {
+          "id": "image_path",
+          "io": "input",
+          "label": "Image Path",
+          "offset": {
+            "x": -111.20001220703125,
+            "y": 14.000001907348633
+          },
+          "type": "string"
+        }
+      ],
+      "label": "Object Detector",
+      "outputs": [
+        {
+          "id": "exec_out",
+          "io": "output",
+          "label": "Exec",
+          "offset": {
+            "x": 109.20001220703125,
+            "y": -15.999998092651367
+          },
+          "type": "EXEC"
+        },
+        {
+          "id": "detections",
+          "io": "output",
+          "label": "Model output",
+          "offset": {
+            "x": 111.20001220703125,
+            "y": 14.000001907348633
+          },
+          "type": "string[]"
+        }
+      ],
+      "skillType": "Basic",
+      "x": 574.5306637806681,
+      "y": 214.78284950343556
+    },
+    {
+      "id": "img_path",
+      "inputs": [],
+      "label": "Image Path",
+      "outputs": [
+        {
+          "id": "v_out",
+          "io": "output",
+          "label": "img_path",
+          "offset": {
+            "x": 111.19998168945312,
+            "y": 14.000017166137695
+          },
+          "type": "string"
+        }
+      ],
+      "skillType": "static_attribute",
+      "value": "file",
+      "x": 207.03998478998523,
+      "y": 283.99327249327354
+    },
+    {
+      "id": "end",
+      "inputs": [
+        {
+          "id": "exec_in",
+          "io": "input",
+          "label": "Exec",
+          "offset": {
+            "x": -109.20001220703125,
+            "y": -7.999998092651367
+          },
+          "type": "EXEC"
+        }
+      ],
+      "label": "End",
+      "outputs": [],
+      "skillType": "end",
+      "x": 947.0002888656796,
+      "y": 207.12135651501993
+    }
+  ]
+}

@@ -1,0 +1,24 @@
+{
+  "nodes": [
+    {
+      "id": "start",
+      "x": 279,
+      "y": 392,
+      "label": "Start",
+      "type": "start"
+    },
+    {
+      "id": "end",
+      "x": 945,
+      "y": 410,
+      "label": "End",
+      "type": "end"
+    }
+  ],
+  "edges": [
+    {
+      "from": "start",
+      "to": "end"
+    }
+  ]
+}

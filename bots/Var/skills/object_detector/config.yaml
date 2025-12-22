@@ -1,0 +1,11 @@
+name: object_detector
+language: python
+version: "3.12"
+entrypoint: "main.py"
+
+INPUT:
+  - id: "image_path"
+    type: "string"
+OUTPUT:
+  - id: "detections"
+    type: "string[]"

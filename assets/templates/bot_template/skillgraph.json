@@ -1,0 +1,53 @@
+{
+  "nodes": [
+    {
+      "id": "Start",
+      "x": -9.531746031746955,
+      "y": 208.21428571428592,
+      "label": "Start",
+      "skillType": "start",
+      "inputs": [],
+      "outputs": [
+        {
+          "id": "exec_out",
+          "label": "Exec",
+          "type": "EXEC",
+          "io": "output",
+          "offset": {
+            "x": 109.18750762939453,
+            "y": -7.999998092651367
+          }
+        }
+      ]
+    },
+    {
+      "id": "end",
+      "x": 1389.3639971140021,
+      "y": 206.9772939478804,
+      "label": "End",
+      "skillType": "end",
+      "inputs": [
+        {
+          "id": "exec_in",
+          "label": "Exec",
+          "type": "EXEC",
+          "io": "input",
+          "offset": {
+            "x": -109.2000732421875,
+            "y": -7.999998092651367
+          }
+        }
+      ],
+      "outputs": []
+    }
+  ],
+  "edges": [
+    {
+      "fromSkillId": "Start",
+      "fromPortId": "exec_out",
+      "toSkillId": "end",
+      "toPortId": "exec_in",
+      "type": "execution"
+    }
+  ]
+}

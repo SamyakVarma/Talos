@@ -1,0 +1,25 @@
+{
+  "python_interpreters": {
+    "3.12.6": "C:/Users/nssam/Documents/talos/global_deps/python/3.12.6/python.exe",
+    "3.11.9": "C:/Users/nssam/Documents/talos/global_deps/python\\3.11.9\\python.exe",
+    "3.10.0": "C:/Users/nssam/Documents/talos/global_deps/python\\3.10.0\\python.exe"
+  },
+  "python": {
+    "keyboard": {
+      "versions": {
+        "0.13.5": "C:/Users/nssam/Documents/talos/global_deps/python/keyboard/0.13.5"
+      }
+    },
+    "pyyaml": {
+      "versions": {
+        "6.0.1": "C:/Users/nssam/Documents/talos/global_deps/python/pyyaml/6.0.1"
+      }
+    },
+    "ultralytics": {
+      "versions": {
+        "8.1.9": "C:\\Users\\nssam\\Documents\\talos\\global_deps\\python\\ultralytics\\8.1.9"
+      }
+    }
+  },
+  "cpp": {}
+}

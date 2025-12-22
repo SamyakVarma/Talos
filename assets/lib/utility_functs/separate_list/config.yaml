@@ -1,0 +1,14 @@
+name: separate_list
+language: python 
+version: any
+entry: separate_list
+
+INPUT:
+  - id: "list_list"
+    type: "list<any>"
+  - id: "list_n"
+    type: "int"
+
+OUTPUT:
+  - id: "list_out<>"
+    type: "dynamic"
