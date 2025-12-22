@@ -192,6 +192,32 @@ export default function SkillZone() {
         // Helper to load config.yaml
         async function loadConfig(skill: any, type: "skill" | "std_skill" | "utility" | "static" ): Promise<AssetWithTemplate> {
           try {
+            if (type === "static") {
+              const skillData: SkillData = {
+                id: skill.id,
+                label: skill.name,
+                skillType: "static_attribute",
+                x: 0,
+                y: 0,
+                inputs: [],
+                outputs: [
+                  {
+                    id: "v_out",
+                    label: skill.name,
+                    type: "string",        // or infer later
+                    io: "output",
+                  },
+                ],
+              };
+
+              return {
+                id: skill.id,
+                label: skill.name,
+                type: "static",
+                preview: <SkillNodePreview data={skillData} />,
+                skillData,
+              };
+            }
             const cfgJson = await invoke("load_skill_config_json", {
               skillPath: skill.path
             });
@@ -280,13 +306,13 @@ export default function SkillZone() {
             allAssets.push(await loadConfig(s, "utility"));
           }
         }
-
-        // // STATIC
-        // if (registry.utility_functions) {
-        //   for (const s of registry.static) {
-        //     allAssets.push(await loadConfig(s, "static"));
-        //   }
-        // }
+        // STATIC
+        if (registry.static_attributes) {
+          for (const s of registry.static_attributes) {
+            console.log(s)
+            allAssets.push(await loadConfig(s, "static"));
+          }
+        }
 
         setAssets(allAssets);
 

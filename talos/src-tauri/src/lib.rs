@@ -1,6 +1,6 @@
 // src-tauri/src/lib.rs
 use std::fs;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use serde::{Deserialize, Serialize};
 use serde_json::Value as JsonValue;
 use std::sync::Mutex;
@@ -69,9 +69,24 @@ pub struct AppState {
     pub nodes: Mutex<Vec<SkillData>>,
 }
 
+#[derive(Debug)]
+struct InputDescriptor {
+    from_skill: String,
+    from_attr: String,
+    to_attr: String,
+    node_type: i16,
+}
+
 fn base_talos_path() -> PathBuf {
     let username = whoami::username();
     PathBuf::from(format!("C:/Users/{}/Documents/talos", username))
+}
+
+fn bot_template_path() -> PathBuf {
+    base_talos_path()
+        .join("assets")
+        .join("templates")
+        .join("bot_template")
 }
 
 fn bots_dir() -> PathBuf {
@@ -114,22 +129,30 @@ fn create_bot(bot_name: String, bot_description: String, custom_path: Option<Str
         return Err(format!("Bot '{}' already exists", bot_name));
     }
 
-    // Create folders
-    fs::create_dir_all(&bot_folder).map_err(|e| e.to_string())?;
-    fs::create_dir_all(bot_folder.join("src")).map_err(|e| e.to_string())?;
-    fs::create_dir_all(bot_folder.join("skills")).map_err(|e| e.to_string())?;
+    let template_path = bot_template_path();
+    if !template_path.exists() {
+        return Err("Bot template folder does not exist".to_string());
+    }
 
-    // Default config with globals structure
-    let default_config = format!(
-        "name: {}\ndescription: {}\n\nglobals:\n  attributes: []\n",
-        bot_name, bot_description
-    );
-    
-    fs::write(bot_folder.join("config.yaml"), default_config)
+    // Create bot folder from template
+    let mut options = CopyOptions::new();
+    options.copy_inside = true;
+
+    copy_dir(&template_path, &bot_folder, &options)
         .map_err(|e| e.to_string())?;
 
-    fs::write(bot_folder.join("src/main.py"), "# main bot logic goes here\n")
-        .map_err(|e| e.to_string())?;
+    let config_path = bot_folder.join("config.yaml");
+
+    if config_path.exists() {
+        let mut config = fs::read_to_string(&config_path)
+            .map_err(|e| e.to_string())?;
+
+        config = config.replace("{{bot_name}}", &bot_name);
+        config = config.replace("{{description}}", &bot_description);
+
+        fs::write(&config_path, config)
+            .map_err(|e| e.to_string())?;
+    }
 
     // Update global bots list
     let list_path = bots_list_path();
@@ -211,7 +234,6 @@ fn load_asset_registry_json() -> Result<String, String> {
 
     let json = serde_json::to_string(&yaml_value)
         .map_err(|e| format!("JSON conversion error: {}", e))?;
-
     Ok(json)
 }
 
@@ -227,7 +249,6 @@ fn load_skill_config_json(skill_path: String) -> Result<String, String> {
 
     let json = serde_json::to_string(&yaml_value)
         .map_err(|e| format!("JSON conversion error: {}", e))?;
-
     Ok(json)
 }
 
@@ -437,18 +458,111 @@ fn sync_static_attributes_to_config(bot_path: &str, graph_json: &str) -> Result<
 
 #[tauri::command]
 fn save_skill_graph(bot_path: String, graph_json: String) -> Result<(), String> {
-    // TODO: do checks before saving (loops, improper connections etc)
-    
-    // Save skillgraph.json
-    let base = PathBuf::from(&bot_path);
-    let file_path = base.join("skillgraph.json");
-    fs::write(&file_path, &graph_json).map_err(|e| e.to_string())?;
-    
-    // Sync static attributes to config.yaml
+    fs::write(
+        PathBuf::from(&bot_path).join("skillgraph.json"),
+        &graph_json,
+    )
+    .map_err(|e| e.to_string())?;
+
     sync_static_attributes_to_config(&bot_path, &graph_json)?;
-    
+
+    let graph: serde_json::Value =
+        serde_json::from_str(&graph_json).map_err(|e| e.to_string())?;
+
+    let nodes = graph["nodes"]
+        .as_array()
+        .ok_or("nodes missing")?;
+    for node in nodes {
+        let node_id = node["id"].as_str().unwrap();
+        let node_type = node["skillType"].as_str().unwrap();
+        if node_type != "Basic" {
+            continue;
+        }
+        let descriptors = build_input_descriptors(&graph, node_id)?;
+        update_skill_main_py(&bot_path, node_id, &descriptors)?;
+    }
     Ok(())
 }
+
+fn update_skill_config_name(dest_skill_dir: &Path, new_id: &str) -> Result<(), String> {
+    let config_path = dest_skill_dir.join("config.yaml");
+    if !config_path.exists() {
+        return Err(format!(
+            "config.yaml not found in {}",
+            dest_skill_dir.display()
+        ));
+    }
+
+    let yaml_str = fs::read_to_string(&config_path).map_err(|e| format!("Failed to read config.yaml: {}", e))?;
+    let mut yaml: serde_yaml::Value = serde_yaml::from_str(&yaml_str).map_err(|e| format!("Failed to parse config.yaml: {}", e))?;
+    match yaml {
+        serde_yaml::Value::Mapping(ref mut map) => {
+            map.insert(
+                serde_yaml::Value::String("name".into()),
+                serde_yaml::Value::String(new_id.into()),
+            );
+        }
+        _ => return Err("config.yaml root is not mapping".into()),
+    }
+
+    let new_yaml = serde_yaml::to_string(&yaml)
+        .map_err(|e| format!("Failed to serialize config.yaml: {}", e))?;
+
+    fs::write(&config_path, new_yaml)
+        .map_err(|e| format!("Failed to write config.yaml: {}", e))?;
+
+    Ok(())
+}
+
+fn build_input_descriptors(
+    graph: &serde_json::Value,
+    target_node_id: &str,
+) -> Result<Vec<InputDescriptor>, String> {
+
+    let nodes = graph["nodes"].as_array().ok_or("nodes missing")?;
+    let edges = graph["edges"].as_array().ok_or("edges missing")?;
+
+    // map node_id -> skillType
+    let mut node_types = std::collections::HashMap::new();
+    for n in nodes {
+        if let (Some(id), Some(t)) = (
+            n["id"].as_str(),
+            n["skillType"].as_str(),
+        ) {
+            node_types.insert(id.to_string(), t.to_string());
+        }
+    }
+
+    let mut inputs = Vec::new();
+
+    for e in edges {
+        if e["toSkillId"].as_str() == Some(target_node_id) {
+            let edge_type = e["type"].as_str().unwrap().to_string();
+            if edge_type == "execution" { continue; }
+            let from_skill = e["fromSkillId"].as_str().unwrap().to_string();
+            let from_attr = e["fromPortId"].as_str().unwrap().to_string();
+            let to_attr = e["toPortId"].as_str().unwrap().to_string();
+
+            let node_type = node_types
+                .get(&from_skill)
+                .map(|t| match t.as_str() {
+                    "static_attribute" => 1,
+                    "utility_function" => 2,
+                    _ => 0,
+                })
+                .unwrap_or(0);
+
+            inputs.push(InputDescriptor {
+                from_skill,
+                from_attr,
+                to_attr,
+                node_type,
+            });
+        }
+    }
+    Ok(inputs)
+}
+
 
 fn copy_skill_node_to_bot(bot_path: &str, asset_id: &str, node_id: &str) -> Result<(), String> {
 
@@ -499,7 +613,6 @@ fn copy_skill_node_to_bot(bot_path: &str, asset_id: &str, node_id: &str) -> Resu
     Ok(())
 }
 
-
 fn generate_unique_node_id(base: &str, existing: &[String]) -> String {
     let mut index = 0;
     loop {
@@ -511,6 +624,62 @@ fn generate_unique_node_id(base: &str, existing: &[String]) -> String {
     }
 }
 
+fn add_skill_to_main_py(bot_path: &str, skill_id: &str) -> Result<(), String> {
+    let main_py_path = PathBuf::from(bot_path)
+        .join("src")
+        .join("main.py");
+
+    let content = fs::read_to_string(&main_py_path)
+        .map_err(|e| format!("Failed to read main.py: {}", e))?;
+
+    let start_marker = "skills_to_run = [";
+    let start = content
+        .find(start_marker)
+        .ok_or("skills_to_run list not found in main.py")?;
+
+    let list_start = start + start_marker.len();
+    let list_end = content[list_start..]
+        .find(']')
+        .map(|i| list_start + i)
+        .ok_or("skills_to_run list not properly closed")?;
+
+    let list_body = &content[list_start..list_end];
+
+    let mut skills: Vec<String> = list_body
+        .lines()
+        .filter_map(|line| {
+            let line = line.trim().trim_end_matches(',');
+            if line.starts_with('"') && line.ends_with('"') {
+                Some(line.trim_matches('"').to_string())
+            } else {
+                None
+            }
+        })
+        .collect();
+
+    if skills.contains(&skill_id.to_string()) {
+        // already registered → no-op
+        return Ok(());
+    }
+
+    skills.push(skill_id.to_string());
+
+    let mut new_list = String::new();
+    for skill in skills {
+        new_list.push_str(&format!("        \"{}\",\n", skill));
+    }
+
+    let mut new_content = String::new();
+    new_content.push_str(&content[..list_start]);
+    new_content.push('\n');
+    new_content.push_str(&new_list);
+    new_content.push_str(&content[list_end..]);
+
+    fs::write(&main_py_path, new_content)
+        .map_err(|e| format!("Failed to write main.py: {}", e))?;
+
+    Ok(())
+}
 
 #[tauri::command]
 fn create_node_from_asset(bot_path: String, base_id: String, skill_data: SkillData, x: f64, y: f64, state: tauri::State<AppState>) -> Result<SkillData, String> {
@@ -537,6 +706,8 @@ fn create_node_from_asset(bot_path: String, base_id: String, skill_data: SkillDa
     new_node.id = new_id.clone();
     new_node.x = x;
     new_node.y = y;
+
+    let is_static = new_node.skill_type == "static_attribute";
 
     if new_node.inputs.is_none() {
         new_node.inputs = Some(vec![]);
@@ -575,9 +746,13 @@ fn create_node_from_asset(bot_path: String, base_id: String, skill_data: SkillDa
         .ok_or("nodes not array")?
         .push(serde_json::to_value(&new_node).unwrap());
 
-
+    
     if let Err(err) = std::fs::write(&graph_path, serde_json::to_string_pretty(&graph).unwrap()) {
         return Err(err.to_string());
+    }
+    if is_static {
+        state.nodes.lock().unwrap().push(new_node.clone());
+        return Ok(new_node);
     }
 
     let copy_result = copy_skill_node_to_bot(&bot_path, &skill_data.id, &new_node.id);
@@ -595,6 +770,21 @@ fn create_node_from_asset(bot_path: String, base_id: String, skill_data: SkillDa
         }
 
         return Err(copy_err);
+    }
+
+    let dest_folder = PathBuf::from(&bot_path).join("skills").join(&new_node.id);
+    if let Err(err) = update_skill_config_name(&dest_folder, &new_node.id) {
+        // rollback if config update fails
+        let _ = std::fs::write(&graph_path, &previous_graph);
+        let _ = fs_extra::dir::remove(&dest_folder);
+        return Err(err);
+    }
+
+    if let Err(err) = add_skill_to_main_py(&bot_path, &new_node.id) {
+        // rollback everything
+        let _ = std::fs::write(&graph_path, &previous_graph);
+        let _ = fs_extra::dir::remove(&dest_folder);
+        return Err(err);
     }
 
     state.nodes.lock().unwrap().push(new_node.clone());
@@ -641,6 +831,58 @@ fn delete_node(bot_path: String, node_id: String, state: tauri::State<AppState>)
     Ok(())
 }
 
+fn update_skill_main_py(
+    bot_path: &str,
+    node_id: &str,
+    descriptors: &[InputDescriptor],
+) -> Result<(), String> {
+
+    let main_py = PathBuf::from(bot_path)
+        .join("skills")
+        .join(node_id)
+        .join("src")
+        .join("main.py");
+    let content = fs::read_to_string(&main_py)
+        .map_err(|e| e.to_string())?;
+
+    let start = content
+        .find("input_descriptor =")
+        .ok_or("input_descriptor not found")?;
+
+    let list_start = content[start..]
+        .find('[')
+        .map(|i| start + i)
+        .ok_or("input_descriptor '[' not found")?;
+
+    let list_end = content[list_start..]
+        .find(']')
+        .map(|i| list_start + i + 1)
+        .ok_or("input_descriptor ']' not found")?;
+
+    let mut new_list = String::from("[\n");
+
+    for d in descriptors {
+        new_list.push_str(&format!(
+            "    (\"{}\", \"{}\", \"{}\", {}),\n",
+            d.from_skill,
+            d.from_attr,
+            d.to_attr,
+            d.node_type
+        ));
+    }
+
+    new_list.push(']');
+
+    let new_content = format!(
+        "{}{}{}",
+        &content[..list_start],
+        new_list,
+        &content[list_end..]
+    );
+
+    fs::write(&main_py, new_content).map_err(|e| e.to_string())?;
+    Ok(())
+}
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
