@@ -14,7 +14,7 @@ export default function SkillNodePreview({ data, scale = 0.8 }: SkillNodePreview
 
   // Ensure EXEC ports exist
   if (
-    (previewData.skillType === "skill" || previewData.skillType === "std_skill")
+    (previewData.skillType === "Basic")
   ) {
     // Add output EXEC if missing
     if (!previewData.outputs.some((p) => p.type === "EXEC")) {

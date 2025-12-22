@@ -204,7 +204,7 @@ export default function SkillZone() {
                   {
                     id: "v_out",
                     label: skill.name,
-                    type: "string",        // or infer later
+                    type: "string",
                     io: "output",
                   },
                 ],
@@ -238,11 +238,11 @@ export default function SkillZone() {
               io: "output",
             }));
             // ------------------------------------------------
-
+             
             const skillData: SkillData = {
               id: cfg.name,
               label: cfg.name,
-              skillType: type,
+              skillType: type == "skill" || type == "std_skill"? "Basic": "utility_function",
               x: 0,
               y: 0,
               inputs,
