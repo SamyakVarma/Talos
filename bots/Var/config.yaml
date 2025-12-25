@@ -8,8 +8,3 @@ globals:
       type: string[]
       value: ["w", "a", "s", "d"]
       description: "Static attribute: keys"
-    - id: value__1_v_out
-      label: "Value"
-      type: int
-      value: 4
-      description: "Static attribute: Value"
