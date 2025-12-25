@@ -1,0 +1,198 @@
+{
+  "edges": [
+    {
+      "fromPortId": "exec_out",
+      "fromSkillId": "object_detector",
+      "toPortId": "exec_in",
+      "toSkillId": "debug__1764610994096",
+      "type": "execution"
+    },
+    {
+      "fromSkillId": "img_path",
+      "fromPortId": "v_out",
+      "toSkillId": "object_detector",
+      "toPortId": "image_path",
+      "type": "attribute"
+    },
+    {
+      "fromSkillId": "Start",
+      "fromPortId": "exec_out",
+      "toSkillId": "end",
+      "toPortId": "exec_in",
+      "type": "execution"
+    },
+    {
+      "fromSkillId": "Start",
+      "fromPortId": "exec_out",
+      "toSkillId": "Keyboard_Input__0",
+      "toPortId": "exec_in",
+      "type": "execution"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "Start",
+      "inputs": [],
+      "label": "Start",
+      "outputs": [
+        {
+          "id": "exec_out",
+          "io": "output",
+          "label": "Exec",
+          "offset": {
+            "x": 109.1875,
+            "y": -7.999998092651367
+          },
+          "type": "EXEC"
+        }
+      ],
+      "skillType": "start",
+      "x": 138.63131313131123,
+      "y": 223.2528860028862
+    },
+    {
+      "id": "object_detector",
+      "inputs": [
+        {
+          "id": "exec_in",
+          "io": "input",
+          "label": "Exec",
+          "offset": {
+            "x": -109.19998168945312,
+            "y": -16.00001335144043
+          },
+          "type": "EXEC"
+        },
+        {
+          "id": "image_path",
+          "io": "input",
+          "label": "Image Path",
+          "offset": {
+            "x": -111.19998168945312,
+            "y": 13.99998664855957
+          },
+          "type": "string"
+        }
+      ],
+      "label": "Object Detector",
+      "outputs": [
+        {
+          "id": "exec_out",
+          "io": "output",
+          "label": "Exec",
+          "offset": {
+            "x": 109.20004272460938,
+            "y": -16.00001335144043
+          },
+          "type": "EXEC"
+        },
+        {
+          "id": "detections",
+          "io": "output",
+          "label": "Model output",
+          "offset": {
+            "x": 111.20004272460938,
+            "y": 13.99998664855957
+          },
+          "type": "string[]"
+        }
+      ],
+      "skillType": "Basic",
+      "x": 597.5306637806681,
+      "y": 415.78284950343556
+    },
+    {
+      "id": "img_path",
+      "inputs": [],
+      "label": "Image Path",
+      "outputs": [
+        {
+          "id": "v_out",
+          "io": "output",
+          "label": "img_path",
+          "offset": {
+            "x": 111.20000314712524,
+            "y": 14.000017166137695
+          },
+          "type": "string"
+        }
+      ],
+      "skillType": "static_attribute",
+      "value": "file",
+      "x": 123.03998478998523,
+      "y": 425.99327249327354
+    },
+    {
+      "id": "end",
+      "inputs": [
+        {
+          "id": "exec_in",
+          "io": "input",
+          "label": "Exec",
+          "offset": {
+            "x": -109.20001220703125,
+            "y": -7.999998092651367
+          },
+          "type": "EXEC"
+        }
+      ],
+      "label": "End",
+      "outputs": [],
+      "skillType": "end",
+      "x": 968.0002888656796,
+      "y": 263.1213565150199
+    },
+    {
+      "id": "Keyboard_Input__0",
+      "x": 477,
+      "y": 216.80001831054688,
+      "label": "Keyboard_Input",
+      "skillType": "Basic",
+      "inputs": [
+        {
+          "id": "keys",
+          "label": "keys",
+          "type": "string[]",
+          "io": "input",
+          "offset": {
+            "x": -111.19998168945312,
+            "y": 14.000001907348633
+          }
+        },
+        {
+          "id": "exec_in",
+          "label": "Exec",
+          "type": "EXEC",
+          "io": "input",
+          "offset": {
+            "x": -109.19998168945312,
+            "y": -15.999998092651367
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "id": "pressed",
+          "label": "pressed",
+          "type": "bool[]",
+          "io": "output",
+          "offset": {
+            "x": 111.20001220703125,
+            "y": 14.000001907348633
+          }
+        },
+        {
+          "id": "exec_out",
+          "label": "Exec",
+          "type": "EXEC",
+          "io": "output",
+          "offset": {
+            "x": 109.20001220703125,
+            "y": -15.999998092651367
+          }
+        }
+      ],
+      "value": null
+    }
+  ]
+}

@@ -3,8 +3,13 @@ description:
 
 globals:
   attributes:
-    - id: img_path_v_out
-      label: "Image Path"
-      type: string
-      value: "file"
-      description: "Static attribute: Image Path"
+    - id: value__0_v_out
+      label: "keys"
+      type: string[]
+      value: ["w", "a", "s", "d"]
+      description: "Static attribute: keys"
+    - id: value__1_v_out
+      label: "Value"
+      type: int
+      value: 4
+      description: "Static attribute: Value"

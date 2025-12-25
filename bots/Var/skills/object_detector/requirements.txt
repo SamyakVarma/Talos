@@ -1,3 +1,0 @@
-opencv-python
-numpy
-ultralytics<=8.3.231

@@ -161,15 +161,26 @@ def readFromFile(skill_root, IP_obj, input_descriptor): # input_descriptor: [(fr
         nodes_map = {}
         conn_map = {}
 
-    def resolve_utility_in(util_node_id, from_attr, to_attr):
+    def resolve_group_input(sk_root, group_port_id):
+        port_map_path = os.path.normpath(os.path.join(sk_root, "port_map.json"))
+        if not os.path.exists(port_map_path):
+            raise FileNotFoundError(f"Missing port_map.json at {port_map_path}")
+        with open(port_map_path, "r") as f:
+            port_map = json.load(f)
+        for entry in port_map.get("inputs", []):
+            if entry["toPortId"] == group_port_id:
+                return entry["fromSkillId"], entry["fromPortId"]
+        raise ValueError(f"No group input mapping for port '{group_port_id}'")
 
+    def resolve_utility_in(util_node_id, from_attr, to_attr):
         util_node = nodes_map.get(util_node_id)
+        base_util_node_id = re.sub(r'__.+$','', util_node_id)
         if util_node is None:
             raise ValueError(f"Utility node '{util_node_id}' not found in graph")
 
         util_path = os.path.join(os.path.expanduser("~"), "Documents", "talos", "assets",
                                  "lib", "utility_functs")
-        skill_dir = os.path.join(util_path, util_node_id)
+        skill_dir = os.path.join(util_path, base_util_node_id)
         config_path = os.path.join(skill_dir, "config.yaml")
         script_path = os.path.join(skill_dir, "script.py")
 
@@ -179,7 +190,7 @@ def readFromFile(skill_root, IP_obj, input_descriptor): # input_descriptor: [(fr
 
         entry = conf.get("entry")
         if not entry:
-            raise ValueError(f"Utility {util_node_id} has no entry point")
+            raise ValueError(f"Utility {base_util_node_id} has no entry point")
 
         resolved_inputs = []
 
@@ -207,17 +218,27 @@ def readFromFile(skill_root, IP_obj, input_descriptor): # input_descriptor: [(fr
                     resolved_inputs.append(val)
 
                 # CASE 2: utility → utility
-                elif src_type == "utility_functions":
+                elif src_type == "utility_function":
                     val = resolve_utility_in(src_node_id, src_attr_id, inp_id)
                     resolved_inputs.append(val)
 
                 # CASE 3: normal skill output
                 else:
-                    temp = type("Tmp", (), {})()
-                    readFromFile(skill_root, temp, [
-                        (src_node_id, src_attr_id, src_attr_id, 0)
+                    is_grp_in = 0
+                    if src_type == "group_start":
+                        src_node_id, src_attr_id = resolve_group_input(skill_root, src_attr_id)
+                        parent_skill_root = os.path.normpath(os.path.join(skill_root, "..", ".."))
+                        is_grp_in = 4
+                    else:
+                        parent_skill_root = skill_root
+                    class _Temp:
+                        pass
+                    temp = _Temp()
+                    setattr(temp, to_attr, None)
+                    temp = readFromFile(parent_skill_root, temp, [
+                        (src_node_id, src_attr_id, to_attr, is_grp_in)
                     ])
-                    resolved_inputs.append(getattr(temp, src_attr_id))
+                    resolved_inputs.append(getattr(temp, to_attr))
 
             if not connection_found:
                 raise ValueError(f"No input source for utility: {util_node_id}.{inp_id}")
@@ -225,13 +246,12 @@ def readFromFile(skill_root, IP_obj, input_descriptor): # input_descriptor: [(fr
         # --------------------------------------------------
         # Run the utility function
         # --------------------------------------------------
-        spec = importlib.util.spec_from_file_location(util_node_id, script_path)
+        spec = importlib.util.spec_from_file_location(base_util_node_id, script_path)
         mod = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(mod)
 
         func = getattr(mod, entry)
         out_idx = parse_output_index(from_attr)
-
         return func(resolved_inputs, out_idx)
 
     for from_skill, from_attr, to_attr, is_static in input_descriptor:
@@ -242,16 +262,28 @@ def readFromFile(skill_root, IP_obj, input_descriptor): # input_descriptor: [(fr
         elif is_static == 1:
             value = static_values.get(from_skill+'_'+from_attr)
         else:
-            skill_dir = os.path.join(out_root, from_skill)
+            skill_dir = os.path.join(out_root, from_skill) + "_out"
+            if is_static >= 3:
+                if is_static == 3:
+                    from_skill, from_attr = resolve_group_input(skill_root, from_attr)
+                    skill_dir = os.path.normpath(os.path.join(skill_root, "..", "..", "out",f"{from_skill}_out"))
+                else:
+                    skill_dir = os.path.join(skill_root,"out", f"{from_skill}_out")
             json_path = os.path.join(skill_dir, "output.json")
-
             if not os.path.exists(json_path):
                 print(f"[readFromFile] Missing: {json_path}")
                 continue
 
             try:
-                with open(json_path, "r", encoding="utf-8") as f:
-                    env = json.load(f)
+                for _ in range(20):
+                    try:
+                        with open(json_path, "r", encoding="utf-8") as f:
+                            env = json.load(f)
+                        break
+                    except PermissionError:
+                        time.sleep(0.01)
+                else:
+                    raise
 
                 attr_meta = env["attributes"].get(from_attr)
                 if not attr_meta:
@@ -448,6 +480,7 @@ def writeToFile(data_obj, out_dir, skill_id):
     # Atomic JSON write
     with open(tmp_json, "w", encoding="utf-8", buffering=8192) as f:
         json.dump(envelope, f, separators=(",", ":"))
+    _write_queue.join()
     safe_replace(tmp_json, final_json)
 
     # print(f"[writeToFile] wrote {json_path}")

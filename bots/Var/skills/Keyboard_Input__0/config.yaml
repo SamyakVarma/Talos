@@ -1,0 +1,10 @@
+name: Keyboard_Input__0
+language: python
+version: 3.12.6
+entry: src/main.py
+INPUT:
+- id: "keys"
+  type: "string[]"
+OUTPUT:
+- id: "pressed"
+  type: "bool[]"

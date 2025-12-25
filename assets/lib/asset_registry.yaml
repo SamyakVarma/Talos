@@ -5,7 +5,7 @@ custom_skills:
   path: C:\\Users\\nssam\\Documents\\talos\\assets\\lib\\custom_skills\\Keyboard_Input
 
 standard_skills:
-- id: Debug
+- id: debug
   name: Debug
   description: debug node, prints to terminal
   path: C:\\Users\\nssam\\Documents\\talos\\assets\\lib\\std_skills\\Debug

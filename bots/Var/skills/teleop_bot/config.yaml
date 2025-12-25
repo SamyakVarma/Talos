@@ -1,0 +1,20 @@
+name: teleop_bot
+description: teleop dummy bot in virtual world.
+
+entry: src/main.py
+INPUT:
+- id: keys
+  type: bool[]
+OUTPUT:
+- id: x
+  type: float
+- id: y
+  type: float
+
+globals:
+  attributes:
+    - id: value__1_v_out
+      label: "Value"
+      type: int
+      value: 4
+      description: "Static attribute: list size"

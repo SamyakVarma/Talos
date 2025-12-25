@@ -14,18 +14,18 @@ path = os.path.join(
 if path not in sys.path:
     sys.path.append(path)
 
-from read_write_temp import *
+from read_write_temp import readFromFile, writeToFile
 
 CURRENT = os.path.abspath(os.path.dirname(__file__))
 T_O_P = os.path.abspath(os.path.join(CURRENT, "..", "..", "..", "out"))
 S_A_P = os.path.abspath(os.path.join(CURRENT, "..", "..", ".."))
 os.makedirs(T_O_P, exist_ok=True)
 CONF_FILE = os.path.join(S_A_P, "config.yaml")
-OUTPUT_FILE = os.path.join(T_O_P, "{{skill_id}}_out.glob")
+OUTPUT_FILE = os.path.join(T_O_P, "debug_out")
 
 from user_main import userMain
 
-from skill_io import readFromFile, WriteToFile
+from skill_io import *
 
 #--------------------------
 
@@ -33,12 +33,13 @@ def main():
 
     try:
         while True:
-            {{skill_id}}_IP_obj = {{skill_id}}_IP()
-            input_descriptor =  [(fromSkillID, fromAttributeID, toAttributeID, 0-> normal, 1-> static, 2-> utility, 3-> group_in), ...]
-            {{skill_id}}_IP_obj = readFromFile(S_A_P, {{skill_id}}_IP_obj, input_descriptor) # temp_path -> /out i.e T_O_P for dynamic. If static, temp_path -> bot's config.yaml
-            {{skill_id}}_OP_obj = userMain({{skill_id}}_IP_obj)
+            debug_IP_obj = debug_IP()
+            # generate input descriptor
+            input_descriptor =  [("move_bot", "x", "d_in", 0)]
+            debug_IP_obj = readFromFile(S_A_P, debug_IP_obj, input_descriptor) # temp_path -> /out i.e T_O_P for dynamic. If static, temp_path -> bot's config.yaml
+            debug_OP_obj = userMain(debug_IP_obj)
 
-            writeToFile({{skill_id}}_OP_obj, OUTPUT_FILE, {{skill_id}})
+            writeToFile(debug_OP_obj, OUTPUT_FILE, "debug")
 
     except KeyboardInterrupt:
         print("\nStopped.")
