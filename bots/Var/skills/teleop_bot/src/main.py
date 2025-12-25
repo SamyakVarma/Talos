@@ -50,6 +50,33 @@ def run_skill(skill_name: str):
     except Exception as e:
         print(f"[{skill_name}] Error: {e}")
 
+def run_group_main():
+    group_main_path = os.path.join(BOT_DIR, "src", "group_main.py")
+    wrapper = get_wrapper_path(BOT_DIR)
+    if not os.path.exists(group_main_path):
+        print("[group_main] File not found.")
+        return
+
+    try:
+        process = subprocess.Popen(
+            [sys.executable, "-u", os.path.abspath(wrapper), os.path.abspath(group_main_path)],
+            cwd=BOT_DIR,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+            shell=False
+        )
+
+        for line in iter(process.stdout.readline, ""):
+            print(f"[group_main] {line.strip()}")
+
+        process.wait()
+        print(f"[group_main] exited with code {process.returncode}")
+
+    except Exception as e:
+        print(f"[group_main] Error: {e}")
+
+
 class SkillOrchestrator:
     def __init__(self):
         self.threads: Dict[str, threading.Thread] = {}
@@ -74,6 +101,13 @@ class SkillOrchestrator:
 
 def main():
     orchestrator = SkillOrchestrator()
+
+    group_thread = threading.Thread(
+        target=run_group_main,
+        daemon=True
+    )
+    group_thread.start()
+    print("[group_main] Started.")
 
     # List of skills to start
     skills_to_run = [
