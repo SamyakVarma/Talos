@@ -3,6 +3,7 @@ import {
   Home,
   ChevronLeft,
   ChevronRight,
+  X,
 } from "lucide-react";
 import { useLocation } from "react-router-dom";
 import { invoke } from "@tauri-apps/api/core";
@@ -10,6 +11,7 @@ import SkillNode, { SkillData, SkillPort } from "../components/SkillNode";
 import PropertiesPanel from "../components/Properties"
 import AssetBrowser, { AssetItem } from "../components/AssetBrowser";
 import SkillNodePreview from "../components/SkillNodePreview";
+import SkillEditor from "../components/SkillEditor";
 import { DndContext, DragEndEvent, useDroppable} from "@dnd-kit/core";
 
 interface Connection {
@@ -25,6 +27,10 @@ interface Graph {
   edges: Connection[];
 }
 
+interface OpenEditor {
+  skillId: string;
+  skillLabel: string;
+}
 
 export default function SkillZone() {
   const location = useLocation();
@@ -37,6 +43,8 @@ export default function SkillZone() {
   const [pos, setPos] = useState({ x: 0, y: 0 });
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
+  const [openEditors, setOpenEditors] = useState<OpenEditor[]>([]);
+  const [activeEditorId, setActiveEditorId] = useState<string | null>(null);
 
   const [graph, setGraph] = useState<Graph>({
     nodes: [],
@@ -393,6 +401,37 @@ export default function SkillZone() {
     draggedNodeId.current = id;
     lastPos.current = { x: e.clientX, y: e.clientY };
     setSelectedNodeId(id); // Select node when clicking it
+  };
+
+  // ---------------- OPEN SKILL EDITOR ----------------
+  const handleNodeDoubleClick = (e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
+    const node = getNodeById(id);
+    if (!node) return;
+
+    // Check if editor is already open
+    const existingEditor = openEditors.find((ed) => ed.skillId === id);
+    if (existingEditor) {
+      setActiveEditorId(id);
+      return;
+    }
+
+    // Add new editor
+    const newEditor: OpenEditor = {
+      skillId: id,
+      skillLabel: node.label,
+    };
+    setOpenEditors((prev) => [...prev, newEditor]);
+    setActiveEditorId(id);
+  };
+
+  // ---------------- CLOSE SKILL EDITOR ----------------
+  const handleCloseEditor = (skillId: string) => {
+    setOpenEditors((prev) => prev.filter((ed) => ed.skillId !== skillId));
+    if (activeEditorId === skillId) {
+      const remaining = openEditors.filter((ed) => ed.skillId !== skillId);
+      setActiveEditorId(remaining.length > 0 ? remaining[remaining.length - 1].skillId : null);
+    }
   };
 
   // ---------------- VALIDATION HELPER ----------------
@@ -845,7 +884,7 @@ export default function SkillZone() {
             {sidebarOpen ? <ChevronLeft /> : <ChevronRight />}
           </button>
 
-          <div className="mt-6 space-y-3 flex-1 flex flex-col">
+          <div className="mt-6 space-y-3 flex-1 flex flex-col overflow-hidden">
             <button
               onClick={() => window.history.back()}
               className="w-full flex items-center gap-3 px-2 py-2 bg-gray-800 hover:bg-gray-700 rounded-lg justify-start"
@@ -855,6 +894,45 @@ export default function SkillZone() {
                 <span className="text-sm whitespace-nowrap">Home</span>
               )}
             </button>
+
+            {/* Skill Editor Tabs */}
+            {openEditors.length > 0 && (
+              <div className="flex-1 flex flex-col overflow-hidden">
+                {sidebarOpen && (
+                  <div className="text-xs text-gray-400 mb-2 px-2">Open Editors</div>
+                )}
+                <div className="flex-1 overflow-y-auto space-y-1">
+                  {openEditors.map((editor) => (
+                    <div
+                      key={editor.skillId}
+                      className={`group flex items-center gap-2 px-2 py-2 rounded-lg cursor-pointer transition-colors ${
+                        activeEditorId === editor.skillId
+                          ? "bg-green-600/30 border border-green-500/50"
+                          : "bg-gray-800 hover:bg-gray-700"
+                      }`}
+                      onClick={() => setActiveEditorId(editor.skillId)}
+                    >
+                      {sidebarOpen ? (
+                        <>
+                          <span className="text-xs flex-1 truncate">{editor.skillLabel}</span>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleCloseEditor(editor.skillId);
+                            }}
+                            className="opacity-0 group-hover:opacity-100 p-0.5 hover:bg-gray-600 rounded text-gray-400 hover:text-white transition-all"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        </>
+                      ) : (
+                        <div className="w-2 h-2 rounded-full bg-green-400 mx-auto" />
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -924,6 +1002,7 @@ export default function SkillZone() {
               data={node}
               selected={node.id === selectedNodeId}
               onMouseDown={(e) => handleNodeMouseDown(e, node.id)}
+              onDoubleClick={(e) => handleNodeDoubleClick(e, node.id)}
               onPortOffsetUpdate={handlePortOffsetUpdate}
               onPortMouseDown={handlePortMouseDown}
               onPortHover={handlePortHover}
@@ -943,6 +1022,22 @@ export default function SkillZone() {
         style={{ zIndex: 5 }}
         onAssetDoubleClick={handleAssetDoubleClick}
       />
+
+      {/* Skill Editor Overlay */}
+      {activeEditorId && (() => {
+        const activeEditor = openEditors.find((ed) => ed.skillId === activeEditorId);
+        if (!activeEditor) return null;
+        return (
+          <div className="absolute inset-0 z-50 bg-[#1a1a1a]">
+            <SkillEditor
+              botPath={bot.path}
+              skillId={activeEditorId}
+              skillLabel={activeEditor.skillLabel}
+              onClose={() => handleCloseEditor(activeEditorId)}
+            />
+          </div>
+        );
+      })()}
     </div>
   </DndContext>
   );

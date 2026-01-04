@@ -884,6 +884,38 @@ fn update_skill_main_py(
     Ok(())
 }
 
+#[tauri::command]
+fn load_skill_code(bot_path: String, node_id: String) -> Result<String, String> {
+    let main_py = PathBuf::from(&bot_path)
+        .join("skills")
+        .join(&node_id)
+        .join("src")
+        .join("main.py");
+    
+    if !main_py.exists() {
+        return Err(format!("Skill code file not found: {}", main_py.display()));
+    }
+    
+    fs::read_to_string(&main_py)
+        .map_err(|e| format!("Failed to read skill code: {}", e))
+}
+
+#[tauri::command]
+fn save_skill_code(bot_path: String, node_id: String, code: String) -> Result<(), String> {
+    let main_py = PathBuf::from(&bot_path)
+        .join("skills")
+        .join(&node_id)
+        .join("src")
+        .join("main.py");
+    
+    if !main_py.exists() {
+        return Err(format!("Skill code file not found: {}", main_py.display()));
+    }
+    
+    fs::write(&main_py, code)
+        .map_err(|e| format!("Failed to save skill code: {}", e))
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let app_state = AppState::default();
@@ -898,7 +930,9 @@ pub fn run() {
             load_asset_registry_json,
             load_skill_config_json,
             create_node_from_asset,
-            delete_node
+            delete_node,
+            load_skill_code,
+            save_skill_code
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
