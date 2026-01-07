@@ -253,6 +253,29 @@ fn load_skill_config_json(skill_path: String) -> Result<String, String> {
 }
 
 #[tauri::command]
+fn get_skill_config_for_bot(bot_path: String, node_id: String) -> Result<String, String> {
+    let skill_dir = PathBuf::from(&bot_path)
+        .join("skills")
+        .join(&node_id);
+    
+    let cfg_path = skill_dir.join("config.yaml");
+    
+    if !cfg_path.exists() {
+        return Err(format!("Skill config not found: {}", cfg_path.display()));
+    }
+    
+    let yaml_content = std::fs::read_to_string(&cfg_path)
+        .map_err(|e| format!("Failed to read config.yaml: {}", e))?;
+
+    let yaml_value: serde_yaml::Value =
+        serde_yaml::from_str(&yaml_content).map_err(|e| format!("YAML error: {}", e))?;
+
+    let json = serde_json::to_string(&yaml_value)
+        .map_err(|e| format!("JSON conversion error: {}", e))?;
+    Ok(json)
+}
+
+#[tauri::command]
 fn load_skill_graph(bot_path: String) -> Result<String, String> {
     let bot_dir = PathBuf::from(&bot_path);
     let file_path = bot_dir.join("skillgraph.json");
@@ -1099,12 +1122,114 @@ fn update_skill_main_py(
     Ok(())
 }
 
+#[tauri::command]
+fn list_skill_files(bot_path: String, node_id: String) -> Result<Vec<String>, String> {
+    let src_dir = PathBuf::from(&bot_path)
+        .join("skills")
+        .join(&node_id)
+        .join("src");
+    
+    if !src_dir.exists() {
+        return Ok(vec![]);
+    }
+    
+    let mut files = Vec::new();
+    let entries = fs::read_dir(&src_dir)
+        .map_err(|e| format!("Failed to read src directory: {}", e))?;
+    
+    for entry in entries {
+        let entry = entry.map_err(|e| format!("Failed to read entry: {}", e))?;
+        let path = entry.path();
+        if path.is_file() {
+            if let Some(ext) = path.extension() {
+                let ext_str = ext.to_string_lossy().to_string();
+                if ext_str == "py" || ext_str == "cpp" || ext_str == "cxx" || ext_str == "cc" {
+                    if let Some(file_name) = path.file_name() {
+                        files.push(file_name.to_string_lossy().to_string());
+                    }
+                }
+            }
+        }
+    }
+    
+    Ok(files)
+}
+
+#[tauri::command]
+fn load_skill_code(bot_path: String, node_id: String, file_name: String) -> Result<String, String> {
+    let file_path = PathBuf::from(&bot_path)
+        .join("skills")
+        .join(&node_id)
+        .join("src")
+        .join(&file_name);
+    
+    if !file_path.exists() {
+        return Err(format!("Skill code file not found: {}", file_path.display()));
+    }
+    
+    fs::read_to_string(&file_path)
+        .map_err(|e| format!("Failed to read skill code: {}", e))
+}
+
+#[tauri::command]
+fn save_skill_code(bot_path: String, node_id: String, file_name: String, code: String) -> Result<(), String> {
+    let src_dir = PathBuf::from(&bot_path)
+        .join("skills")
+        .join(&node_id)
+        .join("src");
+    
+    // Create src directory if it doesn't exist
+    if !src_dir.exists() {
+        fs::create_dir_all(&src_dir)
+            .map_err(|e| format!("Failed to create src directory: {}", e))?;
+    }
+    
+    let file_path = src_dir.join(&file_name);
+    
+    fs::write(&file_path, code)
+        .map_err(|e| format!("Failed to save skill code: {}", e))
+}
+
+#[tauri::command]
+fn copy_code_from_folder(bot_path: String, node_id: String, source_folder: String) -> Result<String, String> {
+    let source_path = PathBuf::from(&source_folder);
+    let dest_path = PathBuf::from(&bot_path)
+        .join("skills")
+        .join(&node_id)
+        .join("src");
+    
+    if !source_path.exists() {
+        return Err(format!("Source folder does not exist: {}", source_path.display()));
+    }
+    
+    if !source_path.is_dir() {
+        return Err(format!("Source path is not a directory: {}", source_path.display()));
+    }
+    
+    // Create destination directory if it doesn't exist
+    if !dest_path.exists() {
+        fs::create_dir_all(&dest_path)
+            .map_err(|e| format!("Failed to create destination directory: {}", e))?;
+    }
+    
+    // Copy all files and subdirectories from source to destination
+    let mut options = CopyOptions::new();
+    options.copy_inside = true;
+    options.overwrite = true;
+    
+    copy_dir(&source_path, &dest_path, &options)
+        .map_err(|e| format!("Failed to copy files: {}", e))?;
+    
+    Ok(format!("Successfully copied files from {} to {}", source_path.display(), dest_path.display()))
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let app_state = AppState::default();
     tauri::Builder::default()
         .manage(app_state)
         .plugin(tauri_plugin_opener::init())
+        .plugin(tauri_plugin_dialog::init())
         .invoke_handler(tauri::generate_handler![
             create_bot,
             get_bots_list,
@@ -1112,8 +1237,13 @@ pub fn run() {
             save_skill_graph,
             load_asset_registry_json,
             load_skill_config_json,
+            get_skill_config_for_bot,
             create_node_from_asset,
-            delete_node
+            delete_node,
+            list_skill_files,
+            load_skill_code,
+            save_skill_code,
+            copy_code_from_folder
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
