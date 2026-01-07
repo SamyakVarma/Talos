@@ -33,6 +33,7 @@ interface SkillNodeProps {
   data: SkillData;
   selected?: boolean;
   onMouseDown?: (e: React.MouseEvent, nodeId: string) => void;
+  onDoubleClick?: (node: SkillData) => void;
   onPortOffsetUpdate?: (nodeId: string, portId: string, offset: { x: number; y: number }) => void;
   onPortMouseDown?: (
     nodeId: string,
@@ -56,6 +57,7 @@ export default function SkillNode({
   data,
   selected,
   onMouseDown,
+  onDoubleClick,
   onPortOffsetUpdate,
   onPortMouseDown,
   onPortHover,
@@ -152,6 +154,10 @@ export default function SkillNode({
         transform: "translate(-50%, -50%)",
       }}
       onMouseDown={(e) => onMouseDown && onMouseDown(e, data.id)}
+      onDoubleClick={(e) => {
+        e.stopPropagation();
+        onDoubleClick?.(data);
+      }}
     >
       {/* EXEC HEADER */}
       {hasExec && (

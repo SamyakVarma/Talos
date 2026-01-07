@@ -1,18 +1,17 @@
 import { useState, useEffect } from "react";
-import { X } from "lucide-react";
-import { SkillData } from "./SkillNode";
+import { SkillData } from "../../components/SkillNode";
 
-interface PropertiesPanelProps {
+interface NodePropertiesProps {
   selectedNode: SkillData | null;
   onClose: () => void;
   onUpdateNode: (oldId: string, updated: Partial<SkillData>) => void;
 }
 
-export default function PropertiesPanel({
+export default function NodeProperties({
   selectedNode,
   onClose,
   onUpdateNode,
-}: PropertiesPanelProps) {
+}: NodePropertiesProps) {
   const [localData, setLocalData] = useState<SkillData | null>(null);
 
   useEffect(() => {
@@ -29,21 +28,17 @@ export default function PropertiesPanel({
 
   const handleApply = () => {
     if (!localData) return;
-
-    onUpdateNode(selectedNode.id, localData); 
+    onUpdateNode(selectedNode.id, localData);
   };
-
 
   const handleValueTypeChange = (newType: string) => {
     if (!localData || !isStaticAttribute) return;
 
-    // Update the output port type
     const updatedOutputs = localData.outputs.map((port) => ({
       ...port,
       type: newType as any,
     }));
 
-    // Reset value based on type
     let newValue: any = "";
     if (newType === "int" || newType === "float") newValue = 0;
     else if (newType === "bool") newValue = false;
@@ -147,16 +142,10 @@ export default function PropertiesPanel({
   };
 
   return (
-    <div className="absolute right-0 top-0 h-full bg-neutral-900 border-l border-neutral-700 shadow-xl flex flex-col">
+    <div className="h-full flex flex-col">
       {/* Header */}
-      <div className="flex items-center justify-between px-3 py-3 border-b border-neutral-700">
-        <h2 className="text-lg font-semibold text-neutral-300">Properties</h2>
-        <button
-          onClick={onClose}
-          className="p-1 hover:bg-neutral-800 rounded transition-colors"
-        >
-          <X className="w-5 h-5 text-neutral-400" />
-        </button>
+      <div className="px-3 py-3 border-b border-neutral-700">
+        <h2 className="text-lg font-semibold text-neutral-300">Node Properties</h2>
       </div>
 
       {/* Content */}
@@ -173,7 +162,7 @@ export default function PropertiesPanel({
             className="w-full px-3 py-2 bg-neutral-800 border border-neutral-700 rounded text-sm text-neutral-500"
             // onChange={(e) => handleChange("id", e.target.value)}
             // className="w-full px-3 py-2 bg-neutral-800 border border-neutral-700 rounded text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500"
-            />
+          />
           <p className="text-xs text-neutral-500">Read-only identifier</p>
         </div>
 
@@ -245,7 +234,7 @@ export default function PropertiesPanel({
           onClick={handleApply}
           className="flex-1 px-4 py-2 bg-cyan-600 hover:bg-cyan-700 text-white rounded text-sm font-medium transition-colors"
         >
-          Apply Changes
+          Apply
         </button>
         <button
           onClick={onClose}

@@ -2,24 +2,22 @@ import { Routes, Route, Link, useLocation } from "react-router-dom";
 import Home from "./pages/Home";
 import Marketplace from "./pages/Marketplace";
 import SkillZone from "./pages/SkillZone";
-
-import { DndContext } from "@dnd-kit/core"; // Import DndContext
+import { TabProvider } from "./contexts/TabContext";
 
 export default function App() {
   const location = useLocation();
   const inSkillZone = location.pathname.startsWith("/skill_zone");
 
   return (
+    <TabProvider>
       <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-900 to-gray-800 flex flex-col">
         {/* Top Toolbar */}
         {!inSkillZone && (
           <nav className="bg-gray-900/80 backdrop-blur-md flex py-6 items-center border-b border-gray-800 sticky mx-10">
             <div className="flex items-center justify-between w-full">
-              <div className="flex items-center gap-8  justify-between w-full">
+              <div className="flex items-center gap-8 justify-between w-full">
                 <div className="flex">
-                  <h1 className="text-2xl font-bold text-green-400">
-                    Talos
-                  </h1>
+                  <h1 className="text-2xl font-bold text-green-400">Talos</h1>
                 </div>
                 <div className="flex gap-3">
                   <Link
@@ -62,5 +60,6 @@ export default function App() {
           </Routes>
         </main>
       </div>
+    </TabProvider>
   );
 }

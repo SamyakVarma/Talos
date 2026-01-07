@@ -256,7 +256,6 @@ fn load_skill_config_json(skill_path: String) -> Result<String, String> {
 fn load_skill_graph(bot_path: String) -> Result<String, String> {
     let bot_dir = PathBuf::from(&bot_path);
     let file_path = bot_dir.join("skillgraph.json");
-
     // If file doesn't exist, create a default graph
     if !file_path.exists() {
         let default_graph = r#"{
@@ -314,7 +313,7 @@ fn load_skill_graph(bot_path: String) -> Result<String, String> {
     Ok(content)
 }
 
-fn sync_static_attributes_to_config(bot_path: &str, graph_json: &str) -> Result<(), String> {
+fn sync_static_attributes_to_config(bot_path: &Path, graph_json: &str) -> Result<(), String> {
     let graph: JsonValue = serde_json::from_str(graph_json).map_err(|e| e.to_string())?;
     
     // Extract static attributes from graph
@@ -456,31 +455,160 @@ fn sync_static_attributes_to_config(bot_path: &str, graph_json: &str) -> Result<
     Ok(())
 }
 
+fn update_port_map_json(bot_path: &Path, node_id: &str, descriptors: &[InputDescriptor]) -> Result<(), String> {
+
+    let port_map_path = bot_path
+        .join("skills")
+        .join(node_id)
+        .join("port_map.json");
+
+    let mut inputs = Vec::new();
+
+    for d in descriptors {
+        inputs.push(serde_json::json!({
+            "fromSkillId": d.from_skill,
+            "fromPortId": d.from_attr,
+            "toPortId": d.to_attr,
+        }));
+    }
+
+    let json = serde_json::json!({
+        "inputs": inputs
+    });
+
+    fs::write(
+        &port_map_path,
+        serde_json::to_string_pretty(&json).unwrap(),
+    )
+    .map_err(|e| format!(
+        "[update_port_map_json] Failed writing {}: {}",
+        port_map_path.display(),
+        e
+    ))?;
+
+    Ok(())
+}
+
+fn update_group_main_py(bot_path: &Path, node_id: &str, descriptors: &[InputDescriptor]) -> Result<(), String> {
+
+    let group_main_py = bot_path.join("src").join("group_main.py");
+
+    if !group_main_py.exists() {
+        return Err(format!("[update_group_main_py] group_main.py not found.\nExpected path:\n  {}", group_main_py.display()));
+    }
+
+    let content = fs::read_to_string(&group_main_py)
+        .map_err(|e| format!("[update_group_main_py] Failed reading {}: {}", group_main_py.display(), e))?;
+
+    let start = content
+        .find("output_descriptor =")
+        .ok_or_else(|| format!("[update_group_main_py] `output_descriptor =` not found in {}", group_main_py.display()))?;
+
+    let list_start = content[start..]
+        .find('[')
+        .map(|i| start + i)
+        .ok_or_else(|| format!("[update_group_main_py] '[' not found after output_descriptor in {}", group_main_py.display()))?;
+
+    let list_end = content[list_start..]
+        .find(']')
+        .map(|i| list_start + i + 1)
+        .ok_or_else(|| format!("[update_group_main_py] ']' not found after output_descriptor in {}", group_main_py.display()))?;
+
+    let mut new_list = String::from("[\n");
+
+    for d in descriptors {
+        new_list.push_str(&format!(
+            "    (\"{}\", \"{}\", \"{}\", {}),\n",
+            d.from_skill,
+            d.from_attr,
+            d.to_attr,
+            d.node_type
+        ));
+    }
+
+    new_list.push(']');
+
+    let new_content = format!(
+        "{}{}{}",
+        &content[..list_start],
+        new_list,
+        &content[list_end..]
+    );
+
+    fs::write(&group_main_py, new_content)
+        .map_err(|e| format!("[update_group_main_py] Failed writing {}: {}", group_main_py.display(), e))?;
+
+    Ok(())
+}
+
+
 #[tauri::command]
 fn save_skill_graph(bot_path: String, graph_json: String) -> Result<(), String> {
-    fs::write(
-        PathBuf::from(&bot_path).join("skillgraph.json"),
-        &graph_json,
-    )
-    .map_err(|e| e.to_string())?;
+    let bot_path_rect = PathBuf::from(bot_path)
+    .components()
+    .collect::<PathBuf>();
+    let target = bot_path_rect.join("skillgraph.json");
+    fs::write(&target, &graph_json)
+    .map_err(|e| format!("[save_skill_graph] Failed to write skillgraph.json at {}: {}", target.display(), e))?;
+    
+    sync_static_attributes_to_config(&bot_path_rect, &graph_json)
+        .map_err(|e| format!("[save_skill_graph] Failed to sync static attributes: {}", e))?;
 
-    sync_static_attributes_to_config(&bot_path, &graph_json)?;
+    let graph: serde_json::Value = serde_json::from_str(&graph_json)
+        .map_err(|e| format!("[save_skill_graph] Invalid graph JSON: {}", e))?;
 
-    let graph: serde_json::Value =
-        serde_json::from_str(&graph_json).map_err(|e| e.to_string())?;
+    let nodes = graph.get("nodes")
+        .and_then(|n| n.as_array())
+        .ok_or_else(|| {format!("[save_skill_graph] Graph JSON missing `nodes` array")})?;
 
-    let nodes = graph["nodes"]
-        .as_array()
-        .ok_or("nodes missing")?;
-    for node in nodes {
-        let node_id = node["id"].as_str().unwrap();
-        let node_type = node["skillType"].as_str().unwrap();
-        if node_type != "Basic" {
-            continue;
+    for (idx, node) in nodes.iter().enumerate() {
+        let node_id = node.get("id")
+            .and_then(|v| v.as_str())
+            .ok_or_else(|| {
+                format!("[save_skill_graph] Node at index {} missing string `id`", idx)})?;
+
+        let node_type = node.get("skillType")
+            .and_then(|v| v.as_str())
+            .ok_or_else(|| {
+                format!("[save_skill_graph] Node `{}` missing string `skillType`",node_id)})?;
+
+        let descriptors = build_input_descriptors(&graph, node_id)
+        .map_err(|e| format!(
+            "[save_skill_graph] Failed building descriptors for node `{}`: {}",
+            node_id, e
+        ))?;
+
+        match node_type {
+            "Basic" => {
+                update_skill_main_py(&bot_path_rect, node_id, &descriptors)
+                    .map_err(|e| format!(
+                        "[save_skill_graph] Failed updating main.py for `{}`: {}",
+                        node_id, e
+                    ))?;
+            }
+
+            "Complex" => {
+                update_port_map_json(&bot_path_rect, node_id, &descriptors)
+                    .map_err(|e| format!(
+                        "[save_skill_graph] Failed updating port_map.json for `{}`: {}",
+                        node_id, e
+                    ))?;
+            }
+
+            "group_end" => {
+                update_group_main_py(&bot_path_rect, node_id, &descriptors)
+                    .map_err(|e| format!(
+                        "[save_skill_graph] Failed updating group_main.py for `{}`: {}",
+                        node_id, e
+                    ))?;
+            }
+
+            _ => {
+                // ignore other node types
+            }
         }
-        let descriptors = build_input_descriptors(&graph, node_id)?;
-        update_skill_main_py(&bot_path, node_id, &descriptors)?;
     }
+
     Ok(())
 }
 
@@ -562,7 +690,6 @@ fn build_input_descriptors(
     }
     Ok(inputs)
 }
-
 
 fn copy_skill_node_to_bot(bot_path: &str, asset_id: &str, node_id: &str) -> Result<(), String> {
 
@@ -716,7 +843,7 @@ fn create_node_from_asset(bot_path: String, base_id: String, skill_data: SkillDa
         new_node.outputs = Some(vec![]);
     }
 
-    if new_node.skill_type == "skill" || new_node.skill_type == "std_skill" {
+    if new_node.skill_type == "Basic" {
         let inputs = new_node.inputs.as_mut().unwrap();
         let outputs = new_node.outputs.as_mut().unwrap();
 
@@ -779,17 +906,72 @@ fn create_node_from_asset(bot_path: String, base_id: String, skill_data: SkillDa
         let _ = fs_extra::dir::remove(&dest_folder);
         return Err(err);
     }
-
-    if let Err(err) = add_skill_to_main_py(&bot_path, &new_node.id) {
+    
+    if new_node.skill_type == "Basic"{
+        if let Err(err) = add_skill_to_main_py(&bot_path, &new_node.id) {
         // rollback everything
         let _ = std::fs::write(&graph_path, &previous_graph);
         let _ = fs_extra::dir::remove(&dest_folder);
         return Err(err);
     }
+    }
 
     state.nodes.lock().unwrap().push(new_node.clone());
 
     Ok(new_node)
+}
+
+fn remove_skill_from_main_py(bot_path: &str, skill_id: &str) -> Result<(), String> {
+    let main_py_path = PathBuf::from(bot_path)
+        .join("src")
+        .join("main.py");
+
+    let content = fs::read_to_string(&main_py_path)
+        .map_err(|e| format!("Failed to read main.py: {}", e))?;
+
+    let start_marker = "skills_to_run = [";
+    let start = content
+        .find(start_marker)
+        .ok_or("skills_to_run list not found in main.py")?;
+
+    let list_start = start + start_marker.len();
+    let list_end = content[list_start..]
+        .find(']')
+        .map(|i| list_start + i)
+        .ok_or("skills_to_run list not properly closed")?;
+
+    let list_body = &content[list_start..list_end];
+
+    let mut skills: Vec<String> = list_body
+        .lines()
+        .filter_map(|line| {
+            let line = line.trim().trim_end_matches(',');
+            if line.starts_with('"') && line.ends_with('"') {
+                Some(line.trim_matches('"').to_string())
+            } else {
+                None
+            }
+        })
+        .collect();
+
+    // Remove the skill if it exists
+    skills.retain(|s| s != skill_id);
+
+    let mut new_list = String::new();
+    for skill in skills {
+        new_list.push_str(&format!("        \"{}\",\n", skill));
+    }
+
+    let mut new_content = String::new();
+    new_content.push_str(&content[..list_start]);
+    new_content.push('\n');
+    new_content.push_str(&new_list);
+    new_content.push_str(&content[list_end..]);
+
+    fs::write(&main_py_path, new_content)
+        .map_err(|e| format!("Failed to write main.py: {}", e))?;
+
+    Ok(())
 }
 
 #[tauri::command]
@@ -826,38 +1008,65 @@ fn delete_node(bot_path: String, node_id: String, state: tauri::State<AppState>)
         }
     }
 
+    if let Err(e) = remove_skill_from_main_py(&bot_path, &node_id) {
+        let _ = std::fs::write(&graph_path, &previous_graph);
+        return Err(format!("Failed to remove skill from main.py: {}", e));
+    }
+
     state.nodes.lock().unwrap().retain(|n| n.id != node_id);
 
     Ok(())
 }
 
 fn update_skill_main_py(
-    bot_path: &str,
+    bot_path: &Path,
     node_id: &str,
     descriptors: &[InputDescriptor],
 ) -> Result<(), String> {
 
-    let main_py = PathBuf::from(bot_path)
+    let main_py = bot_path
         .join("skills")
         .join(node_id)
         .join("src")
         .join("main.py");
+
+    if !main_py.exists() {
+        return Err(format!(
+            "[update_skill_main_py] main.py not found for node `{}`.\nExpected path:\n  {}",
+            node_id,
+            main_py.display()
+        ));
+    }
+
     let content = fs::read_to_string(&main_py)
-        .map_err(|e| e.to_string())?;
+        .map_err(|e| format!(
+            "[update_skill_main_py] Failed reading {}: {}",
+            main_py.display(),
+            e
+        ))?;
 
     let start = content
         .find("input_descriptor =")
-        .ok_or("input_descriptor not found")?;
+        .ok_or_else(|| format!(
+            "[update_skill_main_py] `input_descriptor =` not found in {}",
+            main_py.display()
+        ))?;
 
     let list_start = content[start..]
         .find('[')
         .map(|i| start + i)
-        .ok_or("input_descriptor '[' not found")?;
+        .ok_or_else(|| format!(
+            "[update_skill_main_py] '[' not found after input_descriptor in {}",
+            main_py.display()
+        ))?;
 
     let list_end = content[list_start..]
         .find(']')
         .map(|i| list_start + i + 1)
-        .ok_or("input_descriptor ']' not found")?;
+        .ok_or_else(|| format!(
+            "[update_skill_main_py] ']' not found after input_descriptor in {}",
+            main_py.display()
+        ))?;
 
     let mut new_list = String::from("[\n");
 
@@ -880,7 +1089,13 @@ fn update_skill_main_py(
         &content[list_end..]
     );
 
-    fs::write(&main_py, new_content).map_err(|e| e.to_string())?;
+    fs::write(&main_py, new_content)
+        .map_err(|e| format!(
+            "[update_skill_main_py] Failed writing {}: {}",
+            main_py.display(),
+            e
+        ))?;
+
     Ok(())
 }
 
