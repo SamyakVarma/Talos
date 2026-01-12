@@ -57,12 +57,39 @@ export default function SkillZoneInner({
     canvasViewportRef.current = viewport;
   };
 
+  const handleRemovePort = useCallback(
+    (nodeId: string, portId: string) => {
+      setGraph((prev) => ({
+        ...prev,
+        // Remove edges connected to this port
+        edges: prev.edges.filter(
+          (e) =>
+            e.fromPortId !== portId &&
+            e.toPortId !== portId
+        ),
+
+        // Remove the port from the node
+        nodes: prev.nodes.map((n) =>
+          n.id === nodeId
+            ? {
+                ...n,
+                inputs: n.inputs.filter((p) => p.id !== portId),
+                outputs: n.outputs.filter((p) => p.id !== portId),
+              }
+            : n
+        ),
+      }));
+    },
+    [setGraph]
+  );
+
+
   // ---------------- DELETE NODE ----------------
   useEffect(() => {
     const handleKeyDown = async (e: KeyboardEvent) => {
       if (!selectedNodeId) return;
 
-      if (e.key === "Delete" || e.key === "Backspace") {
+      if (e.key === "Delete") {
         try {
           await invoke("delete_node", {
             botPath: currentPath,
@@ -243,6 +270,7 @@ export default function SkillZoneInner({
         selectedNode={selectedNode}
         onCloseNodeProperties={handleCloseNodeProperties}
         onUpdateNode={handleUpdateNode}
+        onRemovePort={handleRemovePort}
         botPath={currentBotPath}
         skillPath={currentPath}
         isSkill={isSkill}

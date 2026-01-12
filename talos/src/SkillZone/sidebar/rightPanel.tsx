@@ -17,6 +17,7 @@ interface RightPanelProps {
   selectedNode: SkillData | null;
   onCloseNodeProperties: () => void;
   onUpdateNode: (oldId: string, updated: Partial<SkillData>) => void;
+  onRemovePort: (nodeId: string, portId: string) => void;
 
   // Global Properties props
   botPath?: string;
@@ -37,6 +38,7 @@ export default function RightPanel({
   selectedNode,
   onCloseNodeProperties,
   onUpdateNode,
+  onRemovePort,
   botPath,
   skillPath,
   isSkill = false,
@@ -156,6 +158,7 @@ export default function RightPanel({
                 selectedNode={selectedNode}
                 onClose={onCloseNodeProperties}
                 onUpdateNode={onUpdateNode}
+                onRemovePort={onRemovePort}
               />
             )}
           </div>

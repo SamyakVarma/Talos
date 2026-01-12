@@ -1,10 +1,10 @@
-import { Info } from "lucide-react";
-
 interface GlobalPropertiesProps {
   botPath?: string;
   skillPath?: string;
   isSkill?: boolean;
 }
+
+
 
 export default function GlobalProperties({
   botPath,
@@ -43,32 +43,6 @@ export default function GlobalProperties({
           </div>
         </div>
 
-        {/* Info Section */}
-        <div className="mt-6 p-3 bg-neutral-800 border border-neutral-700 rounded-lg">
-          <div className="flex items-start gap-2">
-            <Info size={16} className="text-cyan-400 mt-0.5 flex-shrink-0" />
-            <div className="text-xs text-neutral-400">
-              <p className="mb-2">
-                This panel shows global settings for the current {pathType.toLowerCase()}.
-              </p>
-              <p>
-                More configuration options will be added here in future updates.
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {/* Placeholder for future settings */}
-        <div className="space-y-3 opacity-50">
-          <div className="text-xs font-medium uppercase tracking-wide text-neutral-500">
-            Future Settings
-          </div>
-          <div className="space-y-2">
-            <div className="h-8 bg-neutral-800 border border-neutral-700 rounded"></div>
-            <div className="h-8 bg-neutral-800 border border-neutral-700 rounded"></div>
-            <div className="h-8 bg-neutral-800 border border-neutral-700 rounded"></div>
-          </div>
-        </div>
       </div>
     </div>
   );

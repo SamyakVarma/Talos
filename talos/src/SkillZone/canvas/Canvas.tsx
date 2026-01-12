@@ -131,14 +131,25 @@ export function Canvas({
   // ---------------- MOUSE HANDLERS ----------------
   const handleCanvasMouseDown = (e: React.MouseEvent) => {
     const target = e.target as HTMLElement;
-    if (!target.closest(".node-item") && !target.closest(".asset-item")) {
+    const clickedEmpty =
+      !target.closest(".node-item") && !target.closest(".asset-item");
+
+    // LEFT click
+    if (e.button === 0 && clickedEmpty) {
+      setSelectedNodeId(null);
+      return;
+    }
+
+    // MIDDLE click
+    if (e.button === 1 && clickedEmpty) {
       isPanning.current = true;
       lastPos.current = { x: e.clientX, y: e.clientY };
-      setSelectedNodeId(null);
     }
   };
 
+
   const handleNodeMouseDown = (e: React.MouseEvent, id: string) => {
+    if (e.button !== 0) return;
     e.stopPropagation();
     isDraggingNode.current = true;
     draggedNodeId.current = id;

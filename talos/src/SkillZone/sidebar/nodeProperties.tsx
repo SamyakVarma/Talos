@@ -1,16 +1,19 @@
 import { useState, useEffect } from "react";
 import { SkillData } from "../../components/SkillNode";
+import PortEditor from "../../components/portEditor";
 
 interface NodePropertiesProps {
   selectedNode: SkillData | null;
   onClose: () => void;
   onUpdateNode: (oldId: string, updated: Partial<SkillData>) => void;
+  onRemovePort: (nodeId: string, portId: string) => void;
 }
 
 export default function NodeProperties({
   selectedNode,
   onClose,
   onUpdateNode,
+  onRemovePort
 }: NodePropertiesProps) {
   const [localData, setLocalData] = useState<SkillData | null>(null);
 
@@ -20,16 +23,25 @@ export default function NodeProperties({
 
   if (!selectedNode || !localData) return null;
 
+  const isGroupStart = localData.skillType === "group_start";
+  const isGroupEnd = localData.skillType === "group_end";
+
   const isStaticAttribute = localData.skillType === "static_attribute";
 
   const handleChange = (field: keyof SkillData, value: any) => {
     setLocalData((prev) => (prev ? { ...prev, [field]: value } : null));
   };
 
-  const handleApply = () => {
-    if (!localData) return;
-    onUpdateNode(selectedNode.id, localData);
-  };
+const handleApply = () => {
+  if (!localData) return;
+  onUpdateNode(selectedNode.id, {
+    label: localData.label,
+    inputs: localData.inputs,
+    outputs: localData.outputs,
+    value: localData.value,
+  });
+};
+
 
   const handleValueTypeChange = (newType: string) => {
     if (!localData || !isStaticAttribute) return;
@@ -225,6 +237,51 @@ export default function NodeProperties({
               {renderValueInput()}
             </div>
           </>
+        )}
+
+        {/* Group Start → Group Inputs */}
+        {isGroupStart && (
+          <PortEditor
+            title="Group Inputs"
+            ports={localData.outputs}
+            io="output"
+            onChangePorts={(updatedPorts) =>
+              setLocalData({
+                ...localData,
+                outputs: updatedPorts,
+              })
+            }
+            onRemovePort={(portId) => {
+              onRemovePort(localData.id, portId);
+              setLocalData({
+                ...localData,
+                outputs: localData.outputs.filter((p) => p.id !== portId),
+              });
+            }}
+          />
+        )}
+
+        {/* Group End → Group Outputs */}
+        {isGroupEnd && (
+          <PortEditor
+            title="Group Outputs"
+            ports={localData.inputs}
+            io="input"
+            onChangePorts={(updatedPorts) =>
+              setLocalData({
+                ...localData,
+                inputs: updatedPorts,
+              })
+            }
+            onRemovePort={(portId) => {
+              onRemovePort(localData.id, portId);
+
+              setLocalData({
+                ...localData,
+                inputs: localData.inputs.filter((p) => p.id !== portId),
+              });
+            }}
+          />
         )}
       </div>
 
