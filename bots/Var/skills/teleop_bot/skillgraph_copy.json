@@ -1,0 +1,378 @@
+{
+  "nodes": [
+    {
+      "id": "move_bot",
+      "x": 677.4682539682531,
+      "y": 227.21428571428592,
+      "label": "Move Bot",
+      "skillType": "Basic",
+      "inputs": [
+        {
+          "id": "exec_in",
+          "label": "Exec",
+          "type": "EXEC",
+          "io": "input",
+          "offset": {
+            "x": -109.19999694824219,
+            "y": -52
+          }
+        },
+        {
+          "id": "forw",
+          "label": "Forward",
+          "type": "bool",
+          "io": "input",
+          "offset": {
+            "x": -111.19999694824219,
+            "y": -22
+          }
+        },
+        {
+          "id": "left",
+          "label": "Left",
+          "type": "bool",
+          "io": "input",
+          "offset": {
+            "x": -111.19999694824219,
+            "y": 2
+          }
+        },
+        {
+          "id": "back",
+          "label": "Back",
+          "type": "bool",
+          "io": "input",
+          "offset": {
+            "x": -111.19999694824219,
+            "y": 26
+          }
+        },
+        {
+          "id": "right",
+          "label": "Right",
+          "type": "bool",
+          "io": "input",
+          "offset": {
+            "x": -111.19999694824219,
+            "y": 49.99998474121094
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "id": "exec_out",
+          "label": "Exec",
+          "type": "EXEC",
+          "io": "output",
+          "offset": {
+            "x": 109.1875,
+            "y": -52
+          }
+        },
+        {
+          "id": "x",
+          "label": "X",
+          "type": "float",
+          "io": "output",
+          "offset": {
+            "x": 111.20000457763672,
+            "y": -22
+          }
+        },
+        {
+          "id": "y",
+          "label": "Y",
+          "type": "float",
+          "io": "output",
+          "offset": {
+            "x": 111.20000457763672,
+            "y": 2
+          }
+        }
+      ]
+    },
+    {
+      "id": "teleop_bot__start",
+      "x": -272.53174603174693,
+      "y": 257.2142857142859,
+      "label": "Skill In",
+      "skillType": "group_start",
+      "inputs": [],
+      "outputs": [
+        {
+          "id": "exec_out",
+          "label": "Exec",
+          "type": "EXEC",
+          "io": "output",
+          "offset": {
+            "x": 109.20001220703125,
+            "y": -15.999998092651367
+          }
+        },
+        {
+          "id": "keys",
+          "label": "keys",
+          "type": "bool[]",
+          "io": "output",
+          "offset": {
+            "x": 111.20001220703125,
+            "y": 14.000001907348633
+          }
+        }
+      ]
+    },
+    {
+      "id": "teleop_bot_end",
+      "x": 1389.3639971140021,
+      "y": 206.9772939478804,
+      "label": "Skill Out",
+      "skillType": "group_end",
+      "inputs": [
+        {
+          "id": "exec_in",
+          "label": "Exec",
+          "type": "EXEC",
+          "io": "input",
+          "offset": {
+            "x": -109.2000732421875,
+            "y": -27.999996185302734
+          }
+        },
+        {
+          "id": "x",
+          "label": "X",
+          "type": "float",
+          "io": "input",
+          "offset": {
+            "x": -111.2000732421875,
+            "y": 2.0000038146972656
+          }
+        },
+        {
+          "id": "y",
+          "label": "Y",
+          "type": "float",
+          "io": "input",
+          "offset": {
+            "x": -111.2000732421875,
+            "y": 26.000003814697266
+          }
+        }
+      ],
+      "outputs": []
+    },
+    {
+      "id": "separate_list__0",
+      "x": 220.801587301587,
+      "y": 326.1389092339414,
+      "label": "separate_list",
+      "skillType": "utility_function",
+      "inputs": [
+        {
+          "id": "list_list",
+          "label": "Input List",
+          "type": "list",
+          "io": "input",
+          "offset": {
+            "x": -111.199951171875,
+            "y": -36.0000114440918
+          }
+        },
+        {
+          "id": "list_n",
+          "label": "list_n",
+          "type": "int",
+          "io": "input",
+          "offset": {
+            "x": -111.199951171875,
+            "y": -12.000011444091797
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "id": "list_out<1>",
+          "label": "w",
+          "type": "string",
+          "io": "output",
+          "offset": {
+            "x": 111.20001220703125,
+            "y": -36.0000114440918
+          }
+        },
+        {
+          "id": "list_out<2>",
+          "label": "a",
+          "type": "string",
+          "io": "output",
+          "offset": {
+            "x": 111.20001220703125,
+            "y": -12.000011444091797
+          }
+        },
+        {
+          "id": "list_out<3>",
+          "label": "s",
+          "type": "string",
+          "io": "output",
+          "offset": {
+            "x": 111.20001220703125,
+            "y": 12.000003814697266
+          }
+        },
+        {
+          "id": "list_out<4>",
+          "label": "d",
+          "type": "string",
+          "io": "output",
+          "offset": {
+            "x": 111.20001220703125,
+            "y": 36.000003814697266
+          }
+        }
+      ],
+      "value": null
+    },
+    {
+      "id": "value__1",
+      "x": -269.5317460317443,
+      "y": 353.47224256727554,
+      "label": "Value",
+      "skillType": "static_attribute",
+      "inputs": [],
+      "outputs": [
+        {
+          "id": "v_out",
+          "label": "Value",
+          "type": "int",
+          "io": "output",
+          "offset": {
+            "x": 111.19999694824219,
+            "y": 13.99998664855957
+          }
+        }
+      ],
+      "value": 4
+    },
+    {
+      "id": "debug",
+      "x": 1001.9934640522883,
+      "y": 359.7903828197942,
+      "label": "Debug",
+      "skillType": "Basic",
+      "inputs": [
+        {
+          "id": "exec_in",
+          "label": "Exec",
+          "type": "EXEC",
+          "io": "input",
+          "offset": {
+            "x": -109.199951171875,
+            "y": -15.999998092651367
+          }
+        },
+        {
+          "id": "d_in",
+          "label": "Value",
+          "type": "float",
+          "io": "input",
+          "offset": {
+            "x": -111.199951171875,
+            "y": 14.000001907348633
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "id": "exec_out",
+          "label": "Exec",
+          "type": "EXEC",
+          "io": "output",
+          "offset": {
+            "x": 109.20001220703125,
+            "y": -15.999998092651367
+          }
+        }
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "fromSkillId": "teleop_bot__start",
+      "fromPortId": "exec_out",
+      "toSkillId": "move_bot",
+      "toPortId": "exec_in",
+      "type": "execution"
+    },
+    {
+      "fromSkillId": "teleop_bot__start",
+      "fromPortId": "keys",
+      "toSkillId": "separate_list__0",
+      "toPortId": "list_list",
+      "type": "attribute"
+    },
+    {
+      "fromSkillId": "value__1",
+      "fromPortId": "v_out",
+      "toSkillId": "separate_list__0",
+      "toPortId": "list_n",
+      "type": "attribute"
+    },
+    {
+      "fromSkillId": "separate_list__0",
+      "fromPortId": "list_out<1>",
+      "toSkillId": "move_bot",
+      "toPortId": "forw",
+      "type": "attribute"
+    },
+    {
+      "fromSkillId": "separate_list__0",
+      "fromPortId": "list_out<2>",
+      "toSkillId": "move_bot",
+      "toPortId": "left",
+      "type": "attribute"
+    },
+    {
+      "fromSkillId": "separate_list__0",
+      "fromPortId": "list_out<3>",
+      "toSkillId": "move_bot",
+      "toPortId": "back",
+      "type": "attribute"
+    },
+    {
+      "fromSkillId": "separate_list__0",
+      "fromPortId": "list_out<4>",
+      "toSkillId": "move_bot",
+      "toPortId": "right",
+      "type": "attribute"
+    },
+    {
+      "fromSkillId": "move_bot",
+      "fromPortId": "x",
+      "toSkillId": "debug",
+      "toPortId": "d_in",
+      "type": "attribute"
+    },
+    {
+      "fromSkillId": "move_bot",
+      "fromPortId": "exec_out",
+      "toSkillId": "teleop_bot_end",
+      "toPortId": "exec_in",
+      "type": "execution"
+    },
+    {
+      "fromSkillId": "move_bot",
+      "fromPortId": "x",
+      "toSkillId": "teleop_bot_end",
+      "toPortId": "x",
+      "type": "attribute"
+    },
+    {
+      "fromSkillId": "move_bot",
+      "fromPortId": "y",
+      "toSkillId": "teleop_bot_end",
+      "toPortId": "y",
+      "type": "attribute"
+    }
+  ]
+}

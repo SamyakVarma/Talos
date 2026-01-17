@@ -21,8 +21,7 @@ T_O_P = os.path.abspath(os.path.join(CURRENT, "..", "..", "..", "out"))
 S_A_P = os.path.abspath(os.path.join(CURRENT, "..", "..", ".."))
 os.makedirs(T_O_P, exist_ok=True)
 CONF_FILE = os.path.join(S_A_P, "config.yaml")
-LOCAL_SKILL_ID = os.path.basename(S_A_P)
-OUTPUT_FILE = os.path.join(T_O_P, f"{LOCAL_SKILL_ID}_out")
+OUTPUT_FILE = os.path.join(T_O_P, "debug_out.glob")
 
 from user_main import userMain
 
@@ -36,7 +35,9 @@ def main():
         while True:
             debug_IP_obj = debug_IP()
             # generate input descriptor
-            input_descriptor =  [("move_bot", "x", "d_in", 0)]
+            input_descriptor =  [
+    ("move_bot", "y", "d_in", 0),
+]
             debug_IP_obj = readFromFile(S_A_P, debug_IP_obj, input_descriptor) # temp_path -> /out i.e T_O_P for dynamic. If static, temp_path -> bot's config.yaml
             debug_OP_obj = userMain(debug_IP_obj)
 

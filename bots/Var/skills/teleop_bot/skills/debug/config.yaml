@@ -1,11 +1,8 @@
-name: Debug
+name: debug
 language: python
-version: "X"
+version: X
 entry: src/main.py
-
 INPUT:
-  - id: "d_in"
-    type: "any" 
-OUTPUT:
-  
-
+- id: d_in
+  type: any
+OUTPUT: null

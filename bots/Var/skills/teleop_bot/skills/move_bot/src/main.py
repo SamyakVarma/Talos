@@ -25,8 +25,7 @@ os.makedirs(T_O_P, exist_ok=True)
 # read from /out if dynamic attribute is being read. If static attribute is used read from bot's config.yaml
 CONF_FILE = os.path.join(S_A_P, "config.yaml")
 # only 1 output file.
-LOCAL_SKILL_ID = os.path.basename(S_A_P)
-OUTPUT_FILE = os.path.join(T_O_P, f"{LOCAL_SKILL_ID}_out")
+OUTPUT_FILE = os.path.join(T_O_P, "move_bot_out")
 
 #--------------------------
 from user_main import userMain
@@ -39,10 +38,10 @@ def main():
         while True:
             move_bot_IP_obj = move_bot_IP()
             input_descriptor = [
-                ("separate_list__0", "list_out<1>", "forw", 2),
-                ("separate_list__0", "list_out<2>", "left", 2),
-                ("separate_list__0", "list_out<3>", "back", 2),
-                ("separate_list__0", "list_out<4>", "right", 2)
+    ("separate_list__0", "list_out<1>", "forw", 2),
+    ("separate_list__0", "list_out<2>", "left", 2),
+    ("separate_list__0", "list_out<3>", "back", 2),
+    ("separate_list__0", "list_out<4>", "right", 2),
 ] #[(fromSkillID, fromAttributeID, toAttributeID, isStatic? 1:0), ...]
             move_bot_IP_obj = readFromFile(S_A_P, move_bot_IP_obj, input_descriptor)
             move_bot_OP_obj = userMain(move_bot_IP_obj)

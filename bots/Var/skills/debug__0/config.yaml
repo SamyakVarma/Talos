@@ -1,0 +1,8 @@
+name: debug__0
+language: python
+version: X
+entry: src/main.py
+INPUT:
+- id: d_in
+  type: any
+OUTPUT: null

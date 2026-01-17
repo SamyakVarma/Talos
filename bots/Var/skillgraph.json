@@ -1,16 +1,23 @@
 {
   "edges": [
     {
-      "fromSkillId": "Start",
+      "fromSkillId": "Keyboard_Input__0",
       "fromPortId": "exec_out",
-      "toSkillId": "Keyboard_Input__0",
+      "toSkillId": "teleop_bot",
       "toPortId": "exec_in",
       "type": "execution"
     },
     {
       "fromSkillId": "Keyboard_Input__0",
-      "fromPortId": "exec_out",
+      "fromPortId": "pressed",
       "toSkillId": "teleop_bot",
+      "toPortId": "keys",
+      "type": "attribute"
+    },
+    {
+      "fromSkillId": "Start",
+      "fromPortId": "exec_out",
+      "toSkillId": "Keyboard_Input__0",
       "toPortId": "exec_in",
       "type": "execution"
     },
@@ -22,18 +29,25 @@
       "type": "attribute"
     },
     {
-      "fromSkillId": "Keyboard_Input__0",
-      "fromPortId": "pressed",
-      "toSkillId": "teleop_bot",
-      "toPortId": "keys",
-      "type": "attribute"
+      "fromSkillId": "teleop_bot",
+      "fromPortId": "exec_out",
+      "toSkillId": "debug__0",
+      "toPortId": "exec_in",
+      "type": "execution"
     },
     {
-      "fromSkillId": "teleop_bot",
+      "fromSkillId": "debug__0",
       "fromPortId": "exec_out",
       "toSkillId": "end",
       "toPortId": "exec_in",
       "type": "execution"
+    },
+    {
+      "fromSkillId": "teleop_bot",
+      "fromPortId": "x",
+      "toSkillId": "debug__0",
+      "toPortId": "d_in",
+      "type": "attribute"
     }
   ],
   "nodes": [
@@ -47,15 +61,15 @@
           "io": "output",
           "label": "Exec",
           "offset": {
-            "x": 109.1875,
-            "y": -7.999998092651367
+            "x": 109.18749690055847,
+            "y": -8.000001907348633
           },
           "type": "EXEC"
         }
       ],
       "skillType": "start",
-      "x": 59.63131313131123,
-      "y": 167.2528860028862
+      "x": -104.2059884559904,
+      "y": -22.282828282828014
     },
     {
       "id": "end",
@@ -65,8 +79,8 @@
           "io": "input",
           "label": "Exec",
           "offset": {
-            "x": -120.12004709243774,
-            "y": -8.799997806549072
+            "x": -109.199951171875,
+            "y": -8.000000953674316
           },
           "type": "EXEC"
         }
@@ -74,13 +88,13 @@
       "label": "End",
       "outputs": [],
       "skillType": "end",
-      "x": 1439.4876626030527,
-      "y": 171.10873025239366
+      "x": 1331.8857506261425,
+      "y": 9.946753340416695
     },
     {
       "id": "value__0",
-      "x": 130.05555555555563,
-      "y": 325.0278006659618,
+      "x": -107.05555555555549,
+      "y": 68.13891177707299,
       "label": "keys",
       "skillType": "static_attribute",
       "inputs": [],
@@ -91,8 +105,8 @@
           "type": "string[]",
           "io": "output",
           "offset": {
-            "x": 111.20000004768372,
-            "y": 13.99998664855957
+            "x": 111.20000305771828,
+            "y": 14.000001907348633
           }
         }
       ],
@@ -105,8 +119,8 @@
     },
     {
       "id": "Keyboard_Input__0",
-      "x": 542.6904761904772,
-      "y": 174.91668701171886,
+      "x": 275.4076479076466,
+      "y": 19.24749509252719,
       "label": "Keyboard_Input",
       "skillType": "Basic",
       "inputs": [
@@ -116,8 +130,8 @@
           "type": "string[]",
           "io": "input",
           "offset": {
-            "x": -111.19998168945312,
-            "y": 14.000001907348633
+            "x": -111.20001220703125,
+            "y": 14
           }
         },
         {
@@ -126,8 +140,8 @@
           "type": "EXEC",
           "io": "input",
           "offset": {
-            "x": -109.19998168945312,
-            "y": -15.999998092651367
+            "x": -109.20001220703125,
+            "y": -16.000001192092896
           }
         }
       ],
@@ -138,8 +152,8 @@
           "type": "bool[]",
           "io": "output",
           "offset": {
-            "x": 111.20001220703125,
-            "y": 14.000001907348633
+            "x": 111.19999694824219,
+            "y": 14
           }
         },
         {
@@ -148,8 +162,8 @@
           "type": "EXEC",
           "io": "output",
           "offset": {
-            "x": 109.20001220703125,
-            "y": -15.999998092651367
+            "x": 109.19999694824219,
+            "y": -16.000001192092896
           }
         }
       ],
@@ -157,8 +171,8 @@
     },
     {
       "id": "teleop_bot",
-      "x": 937.6904761904777,
-      "y": 192.0985051935371,
+      "x": 645.6660561660555,
+      "y": 28.98983608486745,
       "label": "Teleop Bot",
       "skillType": "Complex",
       "inputs": [
@@ -168,8 +182,8 @@
           "type": "string[]",
           "io": "input",
           "offset": {
-            "x": -122.32001638412476,
-            "y": 2.2000107765197754
+            "x": -111.20001220703125,
+            "y": 2.000001907348633
           }
         },
         {
@@ -178,8 +192,8 @@
           "type": "EXEC",
           "io": "input",
           "offset": {
-            "x": -120.12001657485962,
-            "y": -30.8000168800354
+            "x": -109.20001220703125,
+            "y": -27.999999523162842
           }
         }
       ],
@@ -190,8 +204,8 @@
           "type": "float",
           "io": "output",
           "offset": {
-            "x": 122.32002878189087,
-            "y": 2.2000107765197754
+            "x": 111.199951171875,
+            "y": 2.000001907348633
           }
         },
         {
@@ -200,8 +214,8 @@
           "type": "float",
           "io": "output",
           "offset": {
-            "x": 122.32002878189087,
-            "y": 28.60000467300415
+            "x": 111.199951171875,
+            "y": 26
           }
         },
         {
@@ -210,8 +224,50 @@
           "type": "EXEC",
           "io": "output",
           "offset": {
-            "x": 120.1200041770935,
-            "y": -30.8000168800354
+            "x": 109.199951171875,
+            "y": -27.999999523162842
+          }
+        }
+      ],
+      "value": null
+    },
+    {
+      "id": "debug__0",
+      "x": 1006.0371572871572,
+      "y": 19.170869681398162,
+      "label": "debug",
+      "skillType": "Basic",
+      "inputs": [
+        {
+          "id": "d_in",
+          "label": "d_in",
+          "type": "any",
+          "io": "input",
+          "offset": {
+            "x": -111.20001220703125,
+            "y": 13.999999046325684
+          }
+        },
+        {
+          "id": "exec_in",
+          "label": "Exec",
+          "type": "EXEC",
+          "io": "input",
+          "offset": {
+            "x": -109.20001220703125,
+            "y": -16.000001430511475
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "id": "exec_out",
+          "label": "Exec",
+          "type": "EXEC",
+          "io": "output",
+          "offset": {
+            "x": 109.199951171875,
+            "y": -16.000001430511475
           }
         }
       ],

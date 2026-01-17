@@ -1,0 +1,19 @@
+name: move_bot
+language: python
+version: "3.12.6"
+entry: src/main.py
+
+INPUT:
+  - id: "forw"
+    type: "bool"
+  - id: "back"
+    type: "bool"
+  - id: "left"
+    type: "bool"
+  - id: "right"
+    type: "bool"
+OUTPUT:
+  - id: "x"
+    type: "float"
+  - id: "y"
+    type: "float"

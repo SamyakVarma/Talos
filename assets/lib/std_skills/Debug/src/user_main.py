@@ -11,7 +11,7 @@ def userMain(debug_IP_obj) -> debug_OP:
      #----------------------------------------
     OP_obj = debug_OP()
     #----------- User-Driver Code -----------#
-
+    print(debug_IP_obj.d_in)
     #----------------------------------------
 
     #-------- Output->Object wrapping -------#

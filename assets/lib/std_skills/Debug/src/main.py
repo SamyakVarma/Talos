@@ -14,7 +14,7 @@ path = os.path.join(
 if path not in sys.path:
     sys.path.append(path)
 
-from read_write_temp import *
+from read_write_temp import readFromFile, writeToFile
 
 CURRENT = os.path.abspath(os.path.dirname(__file__))
 T_O_P = os.path.abspath(os.path.join(CURRENT, "..", "..", "..", "out"))
@@ -25,7 +25,7 @@ OUTPUT_FILE = os.path.join(T_O_P, "debug_out.glob")
 
 from user_main import userMain
 
-from skill_io import readFromFile, writeToFile
+from skill_io import *
 
 #--------------------------
 
@@ -35,7 +35,7 @@ def main():
         while True:
             debug_IP_obj = debug_IP()
             # generate input descriptor
-            # input_descriptor =  [(fromSkillID, fromAttributeID, toAttributeID, isStatic? 1:0), ...]
+            input_descriptor =  []
             debug_IP_obj = readFromFile(S_A_P, debug_IP_obj, input_descriptor) # temp_path -> /out i.e T_O_P for dynamic. If static, temp_path -> bot's config.yaml
             debug_OP_obj = userMain(debug_IP_obj)
 

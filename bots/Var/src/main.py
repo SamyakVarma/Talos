@@ -78,9 +78,10 @@ def main():
 
     # List of skills to start
     skills_to_run = [
-            "Keyboard_Input__0",
-            "teleop_bot",
-    ]
+        "Keyboard_Input__0",
+        "teleop_bot",
+        "debug__0",
+]
 
     for skill in skills_to_run:
         orchestrator.start_skill(skill)

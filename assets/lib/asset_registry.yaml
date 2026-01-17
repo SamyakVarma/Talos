@@ -8,7 +8,7 @@ standard_skills:
 - id: debug
   name: Debug
   description: debug node, prints to terminal
-  path: C:\\Users\\nssam\\Documents\\talos\\assets\\lib\\std_skills\\Debug
+  path: C:\\Users\\nssam\\Documents\\talos\\assets\\lib\\std_skills\\debug
 
 utility_functions:
 - id: boolean_and

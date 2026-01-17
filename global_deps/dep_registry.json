@@ -19,6 +19,11 @@
       "versions": {
         "8.1.9": "C:\\Users\\nssam\\Documents\\talos\\global_deps\\python\\ultralytics\\8.1.9"
       }
+    },
+    "pyserial": {
+      "versions": {
+        "3.5": "C:\\Users\\nssam\\Documents\\talos\\global_deps\\python\\pyserial\\3.5"
+      }
     }
   },
   "cpp": {}

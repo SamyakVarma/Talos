@@ -1,4 +1,4 @@
-name: Debug
+name: debug
 language: python
 version: "X"
 entry: src/main.py
@@ -8,4 +8,3 @@ INPUT:
     type: "any" 
 OUTPUT:
   
-

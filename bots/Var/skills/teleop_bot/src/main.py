@@ -111,9 +111,7 @@ def main():
 
     # List of skills to start
     skills_to_run = [
-        "move_bot",
-        "debug"
-    ]
+]
 
     for skill in skills_to_run:
         orchestrator.start_skill(skill)

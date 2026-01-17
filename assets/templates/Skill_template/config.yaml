@@ -1,0 +1,11 @@
+name: {{skill_label}}
+language: python
+version: "X.XX.X"
+entry: src/main.py
+
+INPUT:
+  - id: "{{attribute_ID}}"
+    type: "{{data_type}}"
+OUTPUT:
+  - id: "{{attribute_ID}}"
+    type: "{{data_type}}" 

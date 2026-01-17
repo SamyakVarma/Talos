@@ -1,9 +1,9 @@
 {
-    "inputs": [
-        {
-            "fromSkillId": "Keyboard_Input__0",
-            "fromPortId": "pressed",
-            "toPortId": "keys"
-        }
-    ]
+  "inputs": [
+    {
+      "fromPortId": "pressed",
+      "fromSkillId": "Keyboard_Input__0",
+      "toPortId": "keys"
+    }
+  ]
 }

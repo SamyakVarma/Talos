@@ -25,7 +25,7 @@ os.makedirs(T_O_P, exist_ok=True)
 # read from /out if dynamic attribute is being read. If static attribute is used read from bot's config.yaml
 CONF_FILE = os.path.join(S_A_P, "config.yaml")
 # only 1 output file.
-LOCAL_SKILL_ID = os.path.basename(S_A_P)
+LOCAL_SKILL_ID = os.path.basename(os.path.abspath(os.path.join(CURRENT, "..")))
 OUTPUT_FILE = os.path.join(T_O_P, f"{LOCAL_SKILL_ID}_out")
 
 #--------------------------

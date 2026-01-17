@@ -25,8 +25,7 @@ os.makedirs(T_O_P, exist_ok=True)
 # read from /out if dynamic attribute is being read. If static attribute is used read from bot's config.yaml
 GROUP_ROOT_PATH = os.path.abspath(os.path.join(CURRENT, ".."))
 # only 1 output file.
-LOCAL_SKILL_ID = os.path.basename(S_A_P)
-OUTPUT_FILE = os.path.join(T_O_P, f"{LOCAL_SKILL_ID}_out")
+OUTPUT_FILE = os.path.join(T_O_P, "teleop_bot_out")
 
 #--------------------------
 
