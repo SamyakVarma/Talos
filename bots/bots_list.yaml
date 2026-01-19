@@ -10,3 +10,9 @@
 - name: MARC
   description: teleop arm
   path: D:/Game\MARC
+- name: Rut
+  description: Vik
+  path: D:/Game\Rut
+- name: Test
+  description: testing
+  path: D:/Game\Test

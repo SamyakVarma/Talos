@@ -45,7 +45,7 @@ def main():
 ] #[(fromSkillID, fromAttributeID, toAttributeID, isStatic? 1:0), ...]
             move_bot_IP_obj = readFromFile(S_A_P, move_bot_IP_obj, input_descriptor)
             move_bot_OP_obj = userMain(move_bot_IP_obj)
-
+            print('AAAAAAAAAAAAAAAAA', move_bot_IP_obj.forw)
             writeToFile(move_bot_OP_obj, OUTPUT_FILE, "move_bot")
 
     except KeyboardInterrupt:

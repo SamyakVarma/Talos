@@ -20,8 +20,8 @@ CURRENT = os.path.abspath(os.path.dirname(__file__))
 T_O_P = os.path.abspath(os.path.join(CURRENT, "..", "..", "..", "out"))
 S_A_P = os.path.abspath(os.path.join(CURRENT, "..", "..", ".."))
 os.makedirs(T_O_P, exist_ok=True)
-CONF_FILE = os.path.join(S_A_P, "config.yaml")
-OUTPUT_FILE = os.path.join(T_O_P, "debug_out.glob")
+LOCAL_SKILL_ID = os.path.basename(os.path.abspath(os.path.join(CURRENT, "..")))
+OUTPUT_FILE = os.path.join(T_O_P, f"{LOCAL_SKILL_ID}_out")
 
 from user_main import userMain
 
